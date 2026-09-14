@@ -1,0 +1,157 @@
+<?php
+require_once __DIR__ . '/auth_check.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/functions.php';
+
+// ---------- User stats ----------
+$totalUsers = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS cnt FROM users"))['cnt'];
+$proUsers = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS cnt FROM users WHERE is_subscribed=1"))['cnt'];
+$trialUsers = $totalUsers - $proUsers;
+
+$newThisMonth = mysqli_fetch_assoc(mysqli_query($conn,
+    "SELECT COUNT(*) AS cnt FROM users WHERE MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())"
+))['cnt'];
+
+// ---------- Revenue stats (only counts successfully COMPLETED payments) ----------
+function revenue_sum($conn, $whereClause) {
+    $res = mysqli_query($conn, "SELECT COALESCE(SUM(amount),0) AS total FROM payments WHERE status='Completed' AND $whereClause");
+    return (float) mysqli_fetch_assoc($res)['total'];
+}
+
+$revenueToday = revenue_sum($conn, "DATE(created_at) = CURDATE()");
+$revenueWeek = revenue_sum($conn, "YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)");
+$revenueMonth = revenue_sum($conn, "MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())");
+$revenueYear = revenue_sum($conn, "YEAR(created_at)=YEAR(CURDATE())");
+$revenueAllTime = revenue_sum($conn, "1=1");
+
+// ---------- Recent signups ----------
+$recentUsers = mysqli_query($conn, "SELECT id, name, email, is_subscribed, created_at FROM users ORDER BY id DESC LIMIT 8");
+
+// ---------- Recent payments ----------
+$recentPayments = mysqli_query($conn, "
+    SELECT p.*, u.name AS user_name FROM payments p
+    JOIN users u ON u.id = p.user_id
+    ORDER BY p.id DESC LIMIT 8
+");
+
+$activeNav = 'dashboard';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard - Folivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="admin-shell" style="flex-direction:column;">
+  <?php include __DIR__ . '/_navbar.php'; ?>
+
+  <div class="admin-main" style="max-width:1180px;margin:0 auto;width:100%;">
+    <div class="page-head">
+      <div class="page-title">Admin Dashboard</div>
+      <div class="page-desc">Overview of all Folivo users, subscriptions, and revenue.</div>
+    </div>
+
+    <h4 style="margin:22px 0 12px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:.05em;">Users</h4>
+    <div class="admin-stats-grid">
+      <div class="admin-stat-card">
+        <div class="stat-label">Total Signed Up</div>
+        <div class="stat-value"><?php echo $totalUsers; ?></div>
+      </div>
+      <div class="admin-stat-card accent">
+        <div class="stat-label">Pro Subscribers</div>
+        <div class="stat-value"><?php echo $proUsers; ?></div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="stat-label">Trial Users</div>
+        <div class="stat-value"><?php echo $trialUsers; ?></div>
+      </div>
+      <div class="admin-stat-card success">
+        <div class="stat-label">New This Month</div>
+        <div class="stat-value"><?php echo $newThisMonth; ?></div>
+      </div>
+    </div>
+
+    <h4 style="margin:26px 0 12px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:.05em;">Revenue (Completed Payments)</h4>
+    <div class="admin-stats-grid">
+      <div class="admin-stat-card">
+        <div class="stat-label">Today</div>
+        <div class="stat-value">Rs. <?php echo number_format($revenueToday); ?></div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="stat-label">This Week</div>
+        <div class="stat-value">Rs. <?php echo number_format($revenueWeek); ?></div>
+      </div>
+      <div class="admin-stat-card accent">
+        <div class="stat-label">This Month</div>
+        <div class="stat-value">Rs. <?php echo number_format($revenueMonth); ?></div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="stat-label">This Year</div>
+        <div class="stat-value">Rs. <?php echo number_format($revenueYear); ?></div>
+      </div>
+      <div class="admin-stat-card success">
+        <div class="stat-label">All Time</div>
+        <div class="stat-value">Rs. <?php echo number_format($revenueAllTime); ?></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:26px;">
+      <div>
+        <h4 style="margin-bottom:12px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:.05em;">Recent Signups</h4>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Name</th><th>Plan</th><th>Joined</th></tr></thead>
+            <tbody>
+              <?php if (mysqli_num_rows($recentUsers) === 0): ?>
+                <tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-faint);">No users yet.</td></tr>
+              <?php else: ?>
+                <?php while ($u = mysqli_fetch_assoc($recentUsers)): ?>
+                  <tr>
+                    <td><a href="edit_user.php?id=<?php echo $u['id']; ?>" style="color:var(--text);text-decoration:none;font-weight:600;"><?php echo e($u['name']); ?></a></td>
+                    <td><span class="pill <?php echo $u['is_subscribed'] ? 'pill-pro' : 'pill-trial'; ?>"><?php echo $u['is_subscribed'] ? 'Pro' : 'Trial'; ?></span></td>
+                    <td style="color:var(--text-muted);"><?php echo date('d M Y', strtotime($u['created_at'])); ?></td>
+                  </tr>
+                <?php endwhile; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <h4 style="margin-bottom:12px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:.05em;">Recent Payments</h4>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>User</th><th>Gateway</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody>
+              <?php if (mysqli_num_rows($recentPayments) === 0): ?>
+                <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-faint);">No payments yet.</td></tr>
+              <?php else: ?>
+                <?php while ($p = mysqli_fetch_assoc($recentPayments)): ?>
+                  <tr>
+                    <td><?php echo e($p['user_name']); ?></td>
+                    <td style="color:var(--text-muted);"><?php echo e($p['gateway']); ?></td>
+                    <td>Rs. <?php echo number_format($p['amount']); ?></td>
+                    <td>
+                      <span class="pill <?php echo $p['status'] === 'Completed' ? 'pill-active' : 'pill-trial'; ?>"><?php echo e($p['status']); ?></span>
+                    </td>
+                  </tr>
+                <?php endwhile; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

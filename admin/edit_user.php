@@ -1,0 +1,212 @@
+<?php
+require_once __DIR__ . '/auth_check.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/functions.php';
+
+$id = (int) ($_GET['id'] ?? 0);
+$error = '';
+$success = '';
+
+function get_user_admin($conn, $id) {
+    $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE id = ?");
+    mysqli_stmt_bind_param($stmt, 'i', $id);
+    mysqli_stmt_execute($stmt);
+    return mysqli_stmt_get_result($stmt)->fetch_assoc();
+}
+
+$user = get_user_admin($conn, $id);
+if (!$user) { die('User not found.'); }
+
+// ---------- Save profile field edits ----------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_user'])) {
+    $name = clean($conn, $_POST['name']);
+    $email = clean($conn, strtolower($_POST['email']));
+    $profession = clean($conn, $_POST['profession']);
+    $phone = clean($conn, $_POST['phone']);
+    $address = clean($conn, $_POST['address']);
+    $bio = clean($conn, $_POST['bio']);
+
+    $check = mysqli_prepare($conn, "SELECT id FROM users WHERE email = ? AND id != ?");
+    mysqli_stmt_bind_param($check, 'si', $email, $id);
+    mysqli_stmt_execute($check);
+
+    if (mysqli_stmt_get_result($check)->num_rows > 0) {
+        $error = 'Another account already uses that email.';
+    } else {
+        $stmt = mysqli_prepare($conn, "UPDATE users SET name=?, email=?, profession=?, phone=?, address=?, bio=? WHERE id=?");
+        mysqli_stmt_bind_param($stmt, 'ssssssi', $name, $email, $profession, $phone, $address, $bio, $id);
+        mysqli_stmt_execute($stmt);
+        $success = 'User details updated.';
+        $user = get_user_admin($conn, $id);
+    }
+}
+
+// ---------- Toggle Pro subscription (admin override — add or remove) ----------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_subscription'])) {
+    $newVal = $user['is_subscribed'] ? 0 : 1;
+    $stmt = mysqli_prepare($conn, "UPDATE users SET is_subscribed=? WHERE id=?");
+    mysqli_stmt_bind_param($stmt, 'ii', $newVal, $id);
+    mysqli_stmt_execute($stmt);
+    $success = $newVal ? 'Pro subscription granted.' : 'Pro subscription removed — account is back to Trial.';
+    $user = get_user_admin($conn, $id);
+}
+
+// ---------- Reset PDF download counter ----------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_pdf_count'])) {
+    $stmt = mysqli_prepare($conn, "UPDATE users SET pdf_downloads_count=0 WHERE id=?");
+    mysqli_stmt_bind_param($stmt, 'i', $id);
+    mysqli_stmt_execute($stmt);
+    $success = 'PDF download count reset to 0.';
+    $user = get_user_admin($conn, $id);
+}
+
+// ---------- Set a new password for this user (admin support action) ----------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
+    $newPass = $_POST['new_password'];
+    if (strlen($newPass) < 6) {
+        $error = 'New password must be at least 6 characters.';
+    } else {
+        $hash = password_hash($newPass, PASSWORD_BCRYPT);
+        $stmt = mysqli_prepare($conn, "UPDATE users SET password=? WHERE id=?");
+        mysqli_stmt_bind_param($stmt, 'si', $hash, $id);
+        mysqli_stmt_execute($stmt);
+        $success = "Password reset for {$user['name']}.";
+    }
+}
+
+// ---------- Stats for this user ----------
+$imageCount = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS cnt FROM portfolio_images WHERE user_id=$id"))['cnt'];
+$paymentsRes = mysqli_query($conn, "SELECT * FROM payments WHERE user_id=$id ORDER BY id DESC");
+
+$activeNav = 'users';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit <?php echo e($user['name']); ?> - Folivo Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="admin-shell" style="flex-direction:column;">
+  <?php include __DIR__ . '/_navbar.php'; ?>
+
+  <div class="admin-main" style="max-width:900px;margin:0 auto;width:100%;">
+    <a href="users.php" style="color:var(--text-muted);text-decoration:none;font-size:13px;">← Back to all users</a>
+
+    <div class="page-head" style="margin-top:14px;">
+      <div class="page-title"><?php echo e($user['name']); ?></div>
+      <div class="page-desc"><?php echo e($user['public_slug']); ?> · Joined <?php echo date('d M Y', strtotime($user['created_at'])); ?></div>
+    </div>
+
+    <?php if ($success): ?><div class="auth-error" style="background:#3DDC9726;color:#3DDC97;"><?php echo e($success); ?></div><?php endif; ?>
+    <?php if ($error): ?><div class="auth-error"><?php echo e($error); ?></div><?php endif; ?>
+
+    <!-- Quick stats + subscription control -->
+    <div class="admin-stats-grid" style="margin-bottom:20px;">
+      <div class="admin-stat-card">
+        <div class="stat-label">Plan</div>
+        <div class="stat-value" style="font-size:18px;">
+          <span class="pill <?php echo $user['is_subscribed'] ? 'pill-pro' : 'pill-trial'; ?>"><?php echo $user['is_subscribed'] ? 'Pro' : 'Trial'; ?></span>
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="stat-label">Portfolio Images</div>
+        <div class="stat-value"><?php echo $imageCount; ?><?php echo $user['is_subscribed'] ? '' : ' / ' . FREE_IMAGE_LIMIT; ?></div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="stat-label">PDF Downloads Used</div>
+        <div class="stat-value"><?php echo (int) $user['pdf_downloads_count']; ?><?php echo $user['is_subscribed'] ? '' : ' / ' . FREE_PDF_LIMIT; ?></div>
+      </div>
+    </div>
+
+    <div class="profile-card" style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <form method="POST" onsubmit="return confirm('<?php echo $user['is_subscribed'] ? 'Remove this user\'s Pro subscription?' : 'Grant this user a free Pro subscription?'; ?>');">
+        <button type="submit" name="toggle_subscription" class="btn <?php echo $user['is_subscribed'] ? 'btn-ghost' : 'btn-primary'; ?>" style="width:auto;padding:10px 18px;">
+          <?php echo $user['is_subscribed'] ? '👑 Remove Pro Subscription' : '👑 Grant Pro Subscription'; ?>
+        </button>
+      </form>
+      <form method="POST" onsubmit="return confirm('Reset this user\'s PDF download count back to 0?');">
+        <button type="submit" name="reset_pdf_count" class="btn btn-ghost" style="width:auto;padding:10px 18px;">↺ Reset PDF Count</button>
+      </form>
+      <a href="delete_user.php?id=<?php echo $id; ?>" class="btn btn-ghost" style="width:auto;padding:10px 18px;text-decoration:none;color:var(--danger);border-color:var(--danger);">🗑 Delete User</a>
+    </div>
+
+    <!-- Editable profile fields -->
+    <form method="POST" class="profile-card" style="margin-bottom:20px;">
+      <h4 style="margin-bottom:16px;">Account Details</h4>
+      <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" name="name" value="<?php echo e($user['name']); ?>" required>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" name="email" value="<?php echo e($user['email']); ?>" required>
+        </div>
+        <div class="field">
+          <label>Profession</label>
+          <select name="profession">
+            <?php foreach (get_professions() as $p): ?>
+              <option value="<?php echo e($p); ?>" <?php echo $user['profession'] === $p ? 'selected' : ''; ?>><?php echo e($p); ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field">
+          <label>Phone</label>
+          <input type="text" name="phone" value="<?php echo e($user['phone']); ?>">
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Address</label>
+          <input type="text" name="address" value="<?php echo e($user['address']); ?>">
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Bio</label>
+          <textarea name="bio"><?php echo e($user['bio']); ?></textarea>
+        </div>
+      </div>
+      <button type="submit" name="save_user" class="btn btn-primary" style="width:auto;padding:10px 22px;margin-top:16px;">Save Changes</button>
+    </form>
+
+    <!-- Admin support: reset password -->
+    <form method="POST" class="profile-card" style="margin-bottom:20px;">
+      <h4 style="margin-bottom:10px;">Reset Password</h4>
+      <p class="muted" style="font-size:12.5px;margin-bottom:12px;">Use this if the user is locked out and needs a new password set on their behalf.</p>
+      <div style="display:flex;gap:10px;">
+        <input type="password" name="new_password" placeholder="New password (min 6 characters)" minlength="6" required style="flex:1;">
+        <button type="submit" name="reset_password" class="btn btn-ghost" style="width:auto;padding:0 18px;">Set Password</button>
+      </div>
+    </form>
+
+    <!-- Payment history -->
+    <h4 style="margin-bottom:12px;color:var(--text-muted);font-size:13px;text-transform:uppercase;letter-spacing:.05em;">Payment History</h4>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Date</th><th>Gateway</th><th>Amount</th><th>Status</th><th>Txn Ref</th></tr></thead>
+        <tbody>
+          <?php if (mysqli_num_rows($paymentsRes) === 0): ?>
+            <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-faint);">No payment attempts yet.</td></tr>
+          <?php else: ?>
+            <?php while ($p = mysqli_fetch_assoc($paymentsRes)): ?>
+              <tr>
+                <td style="color:var(--text-muted);"><?php echo date('d M Y, h:i A', strtotime($p['created_at'])); ?></td>
+                <td><?php echo e($p['gateway']); ?></td>
+                <td>Rs. <?php echo number_format($p['amount']); ?></td>
+                <td><span class="pill <?php echo $p['status'] === 'Completed' ? 'pill-active' : 'pill-trial'; ?>"><?php echo e($p['status']); ?></span></td>
+                <td style="font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);"><?php echo e($p['txn_ref']); ?></td>
+              </tr>
+            <?php endwhile; ?>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
