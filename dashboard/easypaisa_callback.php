@@ -1,6 +1,6 @@
 <?php
 /**
- * FOLIVO - Easypaisa Return/Callback Handler
+ * SAAQIFOLIO - Easypaisa Return/Callback Handler
  *
  * Easypaisa posts back to postBackURL after payment. As with JazzCash,
  * always re-verify the signature yourself — never trust the status field
@@ -40,7 +40,9 @@ if ($txnRef) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Payment Result - Folivo</title>
+<title>Payment Result - SaaqiFolio</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
@@ -49,11 +51,15 @@ if ($txnRef) {
 <div class="auth-form-side" style="min-height:100vh;">
   <div class="auth-card" style="text-align:center;">
     <?php if ($success): ?>
-      <div style="font-size:44px;">🎉</div>
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#10b981;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
       <h2 style="font-family:var(--font-display);margin:12px 0 8px;">Payment Successful!</h2>
       <p class="muted" style="margin-bottom:20px;">Your account has been upgraded to Pro. Enjoy unlimited images and PDF downloads.</p>
     <?php else: ?>
-      <div style="font-size:44px;">⚠️</div>
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(244,63,94,0.15);border:1px solid rgba(244,63,94,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#f43f5e;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
       <h2 style="font-family:var(--font-display);margin:12px 0 8px;">Payment Not Completed</h2>
       <p class="muted" style="margin-bottom:20px;"><?php echo e($responseMessage); ?></p>
     <?php endif; ?>

@@ -50,18 +50,21 @@ $activeNav = 'users';
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Delete User - Folivo Admin</title>
+<title>Delete User - SaaqiFolio Admin</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
+<script src="../assets/js/ui.js"></script>
 </head>
 <body>
 
-<div class="admin-shell" style="flex-direction:column;">
+<div class="admin-shell">
   <?php include __DIR__ . '/_navbar.php'; ?>
 
-  <div class="admin-main" style="max-width:520px;margin:60px auto;width:100%;">
-    <div class="profile-card">
+  <div class="admin-main">
+    <div class="profile-card" style="max-width:540px;">
       <h3 style="margin-bottom:12px;">Delete User</h3>
 
       <?php if ($error): ?><div class="auth-error"><?php echo e($error); ?></div><?php endif; ?>
@@ -70,9 +73,9 @@ $activeNav = 'users';
         Are you sure you want to permanently delete
         <strong><?php echo e($user['name']); ?></strong> (<?php echo e($user['email']); ?>)?
       </p>
-      <p style="font-size:12.5px;color:var(--danger);font-weight:600;margin-bottom:20px;">
-        ⚠️ This deletes their entire account: profile, portfolio images, CV,
-        and payment history. This action cannot be undone.
+      <p style="font-size:12.5px;color:var(--danger);font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:6px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>This deletes their entire account: profile, portfolio images, CV, and payment history. This action cannot be undone.</span>
       </p>
 
       <form method="POST" style="display:flex;gap:10px;">

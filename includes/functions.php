@@ -1,6 +1,6 @@
 <?php
 /**
- * FOLIVO - Core Helper Functions
+ * SAAQIFOLIO - Core Helper Functions
  */
 
 function e($string) {
@@ -93,8 +93,9 @@ function handle_cv_upload($fileInput, $destDir, $maxMB = 8) {
 }
 
 // Very lightweight category "suggestion" based on the original filename —
-// NOT real AI/image recognition (that needs a paid vision API). Manual
-// category selection is always available and is the primary flow.
+// NOT real AI/image recognition. Used only as a fallback when the AI
+// backend is unreachable, slow, or returns a low-confidence result.
+// Manual category selection is always available and is the primary flow.
 function suggest_category_from_filename($filename) {
     $name = strtolower($filename);
     $map = [
@@ -112,6 +113,235 @@ function suggest_category_from_filename($filename) {
         if (strpos($name, $keyword) !== false) return $category;
     }
     return 'Other';
+}
+
+// Collects debug info about each AI backend call so it can be printed to
+// the browser console for troubleshooting. Remove/disable once things
+// are working reliably — it's for debugging, not meant for production.
+function ai_debug_log($entry = null) {
+    static $log = [];
+    if ($entry !== null) {
+        $log[] = $entry;
+    }
+    return $log;
+}
+
+// ============================================================
+// AI Image Categorization (external FastAPI backend)
+// Endpoints used: POST /api/classify-image
+//                 POST /api/classify-images-batch
+// Docs: see the AI backend's own README for the full contract.
+// ============================================================
+
+// Classify ONE image already saved on disk. $originalFilename is only
+// used for the fallback keyword guess if the AI call doesn't work out.
+function classify_image_with_ai($storedPath, $originalFilename, $categories) {
+    if (!defined('AI_BACKEND_URL') || !defined('AI_BACKEND_API_KEY') || !file_exists($storedPath)) {
+        ai_debug_log([
+            'file' => $originalFilename,
+            'stage' => 'skipped',
+            'reason' => !defined('AI_BACKEND_URL') ? 'AI_BACKEND_URL not defined'
+                : (!defined('AI_BACKEND_API_KEY') ? 'AI_BACKEND_API_KEY not defined' : 'stored file not found on disk: ' . $storedPath),
+        ]);
+        return suggest_category_from_filename($originalFilename);
+    }
+
+    $apiUrl = rtrim(AI_BACKEND_URL, '/') . '/api/classify-image';
+    $response = null;
+    $httpCode = 0;
+    $errorMsg = '';
+    $timeout = defined('AI_BACKEND_TIMEOUT') ? AI_BACKEND_TIMEOUT : 7;
+
+    if (function_exists('curl_init')) {
+        $ch = curl_init($apiUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . AI_BACKEND_API_KEY],
+            CURLOPT_POSTFIELDS => [
+                'image' => new CURLFile($storedPath),
+                'allowed_categories' => json_encode($categories),
+            ],
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+        $response = curl_exec($ch);
+        $errorMsg = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    } else {
+        // Fallback: Native PHP HTTP stream multipart POST (zero curl dependency)
+        $boundary = '--------------------------' . microtime(true);
+        $mime = 'image/jpeg';
+        if (function_exists('mime_content_type')) {
+            $detected = @mime_content_type($storedPath);
+            if ($detected) $mime = $detected;
+        }
+        $fileBytes = @file_get_contents($storedPath);
+        if ($fileBytes !== false) {
+            $body = "--{$boundary}\r\n"
+                  . "Content-Disposition: form-data; name=\"allowed_categories\"\r\n\r\n"
+                  . json_encode($categories) . "\r\n"
+                  . "--{$boundary}\r\n"
+                  . "Content-Disposition: form-data; name=\"image\"; filename=\"" . basename($storedPath) . "\"\r\n"
+                  . "Content-Type: {$mime}\r\n\r\n"
+                  . $fileBytes . "\r\n"
+                  . "--{$boundary}--\r\n";
+
+            $opts = [
+                'http' => [
+                    'method'  => 'POST',
+                    'header'  => "Content-Type: multipart/form-data; boundary={$boundary}\r\n"
+                               . "Authorization: Bearer " . AI_BACKEND_API_KEY . "\r\n"
+                               . "Content-Length: " . strlen($body) . "\r\n",
+                    'content' => $body,
+                    'timeout' => $timeout,
+                    'ignore_errors' => true,
+                ],
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ]
+            ];
+            $ctx = stream_context_create($opts);
+            $response = @file_get_contents($apiUrl, false, $ctx);
+            if (isset($http_response_header) && is_array($http_response_header)) {
+                foreach ($http_response_header as $hdr) {
+                    if (preg_match('/HTTP\/\S+\s+(\d{3})/', $hdr, $m)) {
+                        $httpCode = (int)$m[1];
+                        break;
+                    }
+                }
+            }
+            if ($response === false) {
+                $errorMsg = 'Stream request failed';
+            }
+        } else {
+            $errorMsg = 'Failed to read file bytes';
+        }
+    }
+
+    if (!$response || ($httpCode !== 0 && $httpCode !== 200)) {
+        error_log("AI classify-image failed for $originalFilename: $errorMsg (HTTP $httpCode)");
+        ai_debug_log([
+            'file' => $originalFilename,
+            'stage' => 'request_failed',
+            'url' => $apiUrl,
+            'http_code' => $httpCode,
+            'curl_error' => $errorMsg,
+            'raw_response' => $response,
+        ]);
+        return suggest_category_from_filename($originalFilename);
+    }
+
+    $data = json_decode($response, true);
+    $minConfidence = defined('AI_MIN_CONFIDENCE') ? AI_MIN_CONFIDENCE : 0.5;
+
+    if (
+        !empty($data['success']) &&
+        !empty($data['category']) &&
+        in_array($data['category'], $categories, true) &&
+        ($data['confidence'] ?? 0) >= $minConfidence
+    ) {
+        ai_debug_log([
+            'file' => $originalFilename,
+            'stage' => 'success',
+            'category' => $data['category'],
+            'confidence' => $data['confidence'] ?? null,
+        ]);
+        return $data['category'];
+    }
+
+    ai_debug_log([
+        'file' => $originalFilename,
+        'stage' => 'rejected_response',
+        'reason' => 'response did not pass the success/category/confidence checks',
+        'raw_response' => $response,
+    ]);
+    return suggest_category_from_filename($originalFilename);
+}
+
+// Classify MULTIPLE images already saved on disk in a single request.
+// $files must be an array of ['filename' => storedFilenameOnDisk,
+// 'path' => absoluteStoredPath, 'original' => originalUploadedFilename].
+// Returns an associative array keyed by stored filename => category,
+// so the caller can look up each result by the name it already has.
+// NOTE: currently NOT used by portfolio.php — see the comment in the
+// upload handler. PHP's curl can't send a truly-repeated "images" field
+// (it always adds [0],[1]... brackets), which this API's batch endpoint
+// rejects with 422. Left here for reference / future fix (e.g. building
+// the multipart body manually, or asking the backend dev to also accept
+// "images[]").
+function classify_images_batch_with_ai($files, $categories) {
+    $results = [];
+    if (empty($files)) return $results;
+
+    if (!defined('AI_BACKEND_URL') || !defined('AI_BACKEND_API_KEY')) {
+        foreach ($files as $f) {
+            $results[$f['filename']] = suggest_category_from_filename($f['original']);
+        }
+        return $results;
+    }
+
+    $postFields = ['allowed_categories' => json_encode($categories)];
+    $index = 0;
+    foreach ($files as $f) {
+        if (file_exists($f['path'])) {
+            // Repeated "images" field, one per file — matches the batch API's contract.
+            $postFields['images[' . $index . ']'] = new CURLFile($f['path']);
+            $index++;
+        }
+    }
+
+    $ch = curl_init(rtrim(AI_BACKEND_URL, '/') . '/api/classify-images-batch');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => defined('AI_BACKEND_BATCH_TIMEOUT') ? AI_BACKEND_BATCH_TIMEOUT : 60,
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . AI_BACKEND_API_KEY],
+        CURLOPT_POSTFIELDS => $postFields,
+    ]);
+
+    $response = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($curlError !== '' || $httpCode !== 200) {
+        error_log("AI classify-images-batch failed: $curlError (HTTP $httpCode)");
+        foreach ($files as $f) {
+            $results[$f['filename']] = suggest_category_from_filename($f['original']);
+        }
+        return $results;
+    }
+
+    $data = json_decode($response, true);
+    $minConfidence = defined('AI_MIN_CONFIDENCE') ? AI_MIN_CONFIDENCE : 0.5;
+
+    // Index the API's per-file results by the filename it reports back.
+    $byFilename = [];
+    if (!empty($data['results']) && is_array($data['results'])) {
+        foreach ($data['results'] as $r) {
+            if (!empty($r['filename'])) $byFilename[$r['filename']] = $r;
+        }
+    }
+
+    foreach ($files as $f) {
+        $r = $byFilename[$f['filename']] ?? null;
+        if (
+            $r && !empty($r['success']) && !empty($r['category']) &&
+            in_array($r['category'], $categories, true) &&
+            ($r['confidence'] ?? 0) >= $minConfidence
+        ) {
+            $results[$f['filename']] = $r['category'];
+        } else {
+            $results[$f['filename']] = suggest_category_from_filename($f['original']);
+        }
+    }
+
+    return $results;
 }
 
 function get_categories() {
@@ -205,8 +435,8 @@ function jazzcash_build_fields($txnRef, $amountPkr) {
         'pp_TxnCurrency' => 'PKR',
         'pp_TxnDateTime' => $now->format('YmdHis'),
         'pp_TxnExpiryDateTime' => $expiry->format('YmdHis'),
-        'pp_BillReference' => 'FolivoPro',
-        'pp_Description' => 'Folivo Pro Plan Upgrade',
+        'pp_BillReference' => 'SaaqiFolioPro',
+        'pp_Description' => 'SaaqiFolio Pro Plan Upgrade',
         'pp_ReturnURL' => APP_URL . '/dashboard/jazzcash_callback.php',
     ];
 

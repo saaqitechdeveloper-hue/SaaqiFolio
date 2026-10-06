@@ -24,17 +24,20 @@ $activeNav = 'payments';
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Payments - Folivo Admin</title>
+<title>Payments - SaaqiFolio Admin</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
+<script src="../assets/js/ui.js"></script>
 </head>
 <body>
 
-<div class="admin-shell" style="flex-direction:column;">
+<div class="admin-shell">
   <?php include __DIR__ . '/_navbar.php'; ?>
 
-  <div class="admin-main" style="max-width:1180px;margin:0 auto;width:100%;">
+  <div class="admin-main">
     <div class="page-head">
       <div class="page-title">Payments</div>
       <div class="page-desc">Every JazzCash / Easypaisa transaction attempt across all users.</div>
@@ -60,12 +63,19 @@ $activeNav = 'payments';
     </div>
 
     <form method="GET" class="admin-search-row" style="max-width:260px;">
-      <select name="status" onchange="this.form.submit()">
-        <option value="All" <?php echo $statusFilter === 'All' ? 'selected' : ''; ?>>All Statuses</option>
-        <option value="Completed" <?php echo $statusFilter === 'Completed' ? 'selected' : ''; ?>>Completed</option>
-        <option value="Pending" <?php echo $statusFilter === 'Pending' ? 'selected' : ''; ?>>Pending</option>
-        <option value="Failed" <?php echo $statusFilter === 'Failed' ? 'selected' : ''; ?>>Failed</option>
-      </select>
+      <div class="form-select" data-autosubmit="1" style="width:100%;">
+        <input type="hidden" name="status" value="<?php echo e($statusFilter); ?>">
+        <button type="button" class="form-select-trigger" style="height:42px;">
+          <span><?php echo $statusFilter === 'All' ? 'All Statuses' : e($statusFilter); ?></span>
+          <span class="fs-caret"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg></span>
+        </button>
+        <ul class="form-select-list" hidden>
+          <li class="form-select-item <?php echo $statusFilter === 'All' ? 'active' : ''; ?>" data-value="All">All Statuses</li>
+          <li class="form-select-item <?php echo $statusFilter === 'Completed' ? 'active' : ''; ?>" data-value="Completed">Completed</li>
+          <li class="form-select-item <?php echo $statusFilter === 'Pending' ? 'active' : ''; ?>" data-value="Pending">Pending</li>
+          <li class="form-select-item <?php echo $statusFilter === 'Failed' ? 'active' : ''; ?>" data-value="Failed">Failed</li>
+        </ul>
+      </div>
     </form>
 
     <div class="admin-table-wrap">

@@ -85,17 +85,20 @@ $activeNav = 'users';
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Edit <?php echo e($user['name']); ?> - Folivo Admin</title>
+<title>Edit <?php echo e($user['name']); ?> - SaaqiFolio Admin</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
+<script src="../assets/js/ui.js"></script>
 </head>
 <body>
 
-<div class="admin-shell" style="flex-direction:column;">
+<div class="admin-shell">
   <?php include __DIR__ . '/_navbar.php'; ?>
 
-  <div class="admin-main" style="max-width:900px;margin:0 auto;width:100%;">
+  <div class="admin-main">
     <a href="users.php" style="color:var(--text-muted);text-decoration:none;font-size:13px;">← Back to all users</a>
 
     <div class="page-head" style="margin-top:14px;">
@@ -127,13 +130,20 @@ $activeNav = 'users';
     <div class="profile-card" style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
       <form method="POST" onsubmit="return confirm('<?php echo $user['is_subscribed'] ? 'Remove this user\'s Pro subscription?' : 'Grant this user a free Pro subscription?'; ?>');">
         <button type="submit" name="toggle_subscription" class="btn <?php echo $user['is_subscribed'] ? 'btn-ghost' : 'btn-primary'; ?>" style="width:auto;padding:10px 18px;">
-          <?php echo $user['is_subscribed'] ? '👑 Remove Pro Subscription' : '👑 Grant Pro Subscription'; ?>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
+          <span><?php echo $user['is_subscribed'] ? 'Remove Pro Subscription' : 'Grant Pro Subscription'; ?></span>
         </button>
       </form>
       <form method="POST" onsubmit="return confirm('Reset this user\'s PDF download count back to 0?');">
-        <button type="submit" name="reset_pdf_count" class="btn btn-ghost" style="width:auto;padding:10px 18px;">↺ Reset PDF Count</button>
+        <button type="submit" name="reset_pdf_count" class="btn btn-ghost" style="width:auto;padding:10px 18px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>Reset PDF Count</span>
+        </button>
       </form>
-      <a href="delete_user.php?id=<?php echo $id; ?>" class="btn btn-ghost" style="width:auto;padding:10px 18px;text-decoration:none;color:var(--danger);border-color:var(--danger);">🗑 Delete User</a>
+      <a href="delete_user.php?id=<?php echo $id; ?>" class="btn btn-danger-ghost" style="width:auto;padding:10px 18px;text-decoration:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <span>Delete User</span>
+      </a>
     </div>
 
     <!-- Editable profile fields -->
@@ -150,11 +160,15 @@ $activeNav = 'users';
         </div>
         <div class="field">
           <label>Profession</label>
-          <select name="profession">
-            <?php foreach (get_professions() as $p): ?>
-              <option value="<?php echo e($p); ?>" <?php echo $user['profession'] === $p ? 'selected' : ''; ?>><?php echo e($p); ?></option>
-            <?php endforeach; ?>
-          </select>
+          <div class="form-select">
+            <input type="hidden" name="profession" value="<?php echo e($user['profession']); ?>">
+            <button type="button" class="form-select-trigger"><span><?php echo e($user['profession'] ?: 'Select profession'); ?></span><span class="fs-caret">▾</span></button>
+            <ul class="form-select-list" hidden>
+              <?php foreach (get_professions() as $p): ?>
+                <li class="form-select-item <?php echo $user['profession'] === $p ? 'active' : ''; ?>" data-value="<?php echo e($p); ?>"><?php echo e($p); ?></li>
+              <?php endforeach; ?>
+            </ul>
+          </div>
         </div>
         <div class="field">
           <label>Phone</label>
@@ -176,9 +190,15 @@ $activeNav = 'users';
     <form method="POST" class="profile-card" style="margin-bottom:20px;">
       <h4 style="margin-bottom:10px;">Reset Password</h4>
       <p class="muted" style="font-size:12.5px;margin-bottom:12px;">Use this if the user is locked out and needs a new password set on their behalf.</p>
-      <div style="display:flex;gap:10px;">
-        <input type="password" name="new_password" placeholder="New password (min 6 characters)" minlength="6" required style="flex:1;">
-        <button type="submit" name="reset_password" class="btn btn-ghost" style="width:auto;padding:0 18px;">Set Password</button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div class="password-wrap" style="flex:1;">
+          <input type="password" name="new_password" placeholder="New password (min 6 characters)" minlength="6" required style="width:100%;">
+          <button type="button" class="btn-toggle-pw" aria-label="Toggle password visibility" tabindex="-1">
+            <svg class="eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="display:none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+          </button>
+        </div>
+        <button type="submit" name="reset_password" class="btn btn-ghost" style="width:auto;padding:0 18px;white-space:nowrap;height:42px;">Set Password</button>
       </div>
     </form>
 

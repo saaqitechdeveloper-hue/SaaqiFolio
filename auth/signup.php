@@ -48,10 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Create Account - Folivo</title>
+<title>Create Account - SaaqiFolio</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
+<script src="../assets/js/ui.js"></script>
 </head>
 <body>
 
@@ -59,10 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="auth-visual">
     <div class="mark-row">
       <div class="brand-mark"></div>
-      <div class="brand-name">Folivo</div>
+      <div class="brand-name">SaaqiFolio</div>
     </div>
-    <div class="auth-headline">Apna design <em>portfolio</em> minutes mein banayein</div>
-    <p class="auth-sub">Apna kaam upload karein, categories mein organize karein, aur clients ko ek professional link share karein.</p>
+    <div class="auth-headline">Build your creative <em>portfolio</em> in minutes</div>
+    <p class="auth-sub">Upload your work, organize with smart categories, and share a sleek, professional link with clients worldwide.</p>
   </div>
 
   <div class="auth-form-side">
@@ -85,19 +88,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="field">
           <label>Password</label>
-          <input type="password" name="password" placeholder="Choose a password" required minlength="6">
+          <div class="password-wrap">
+            <input type="password" name="password" placeholder="Choose a password" required minlength="6">
+            <button type="button" class="btn-toggle-pw" aria-label="Toggle password visibility" tabindex="-1">
+              <svg class="eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="display:none;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+            </button>
+          </div>
         </div>
         <div class="field">
           <label>Profession</label>
-          <select name="profession">
-            <?php foreach (get_professions() as $p): ?>
-              <option value="<?php echo e($p); ?>" <?php echo (($_POST['profession'] ?? '') === $p) ? 'selected' : ''; ?>><?php echo e($p); ?></option>
-            <?php endforeach; ?>
-          </select>
+          <?php $selectedProfession = $_POST['profession'] ?? (get_professions()[0] ?? ''); ?>
+          <div class="form-select">
+            <input type="hidden" name="profession" value="<?php echo e($selectedProfession); ?>">
+            <button type="button" class="form-select-trigger"><span><?php echo e($selectedProfession ?: 'Select profession'); ?></span><span class="fs-caret">▾</span></button>
+            <ul class="form-select-list" hidden>
+              <?php foreach (get_professions() as $p): ?>
+                <li class="form-select-item <?php echo $selectedProfession === $p ? 'active' : ''; ?>" data-value="<?php echo e($p); ?>"><?php echo e($p); ?></li>
+              <?php endforeach; ?>
+            </ul>
+          </div>
         </div>
         <button class="btn btn-primary" type="submit">Create account</button>
       </form>
-      <div class="auth-hint">Account bana kar aap apna portfolio building shuru kar sakte hain.</div>
+      <div class="auth-hint">Join thousands of creative professionals showcasing their work with SaaqiFolio.</div>
     </div>
   </div>
 </div>

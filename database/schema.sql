@@ -1,5 +1,5 @@
 -- ============================================
--- FOLIVO - Designer Portfolio Platform
+-- SAAQIFOLIO - Designer Portfolio Platform
 -- Database Schema
 -- ============================================
 

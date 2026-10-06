@@ -1,4 +1,4 @@
-# Folivo — Designer Portfolio Platform (PHP + MySQL)
+# SaaqiFolio — Designer Portfolio Platform (PHP + MySQL)
 
 A full server-side rewrite of the original HTML/CSS/JS designer-portfolio app.
 Same visual design, same features — now backed by real accounts and a real
@@ -103,7 +103,7 @@ deleting from a user's own dashboard.
 ## PDF Design
 
 The "Download PDF" button now opens with a colored cover banner (using
-Folivo's own brand purple) showing a circular avatar photo, name, role,
+SaaqiFolio's own brand purple) showing a circular avatar photo, name, role,
 and contact line — matching the app's own visual identity rather than a
 plain white page.
 

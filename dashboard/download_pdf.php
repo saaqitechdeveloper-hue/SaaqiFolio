@@ -1,11 +1,11 @@
 <?php
 /**
- * FOLIVO - Portfolio PDF Download
+ * SAAQIFOLIO - Portfolio PDF Download
  *
- * Uses includes/simple_pdf.php — a small PDF writer built into this app
- * itself, so there is NOTHING to install (no Composer, no dompdf). It
- * only needs the GD extension for embedding images, which is enabled by
- * default on almost every PHP install (including XAMPP).
+ * Supports category scoping and 3 luxury design templates:
+ * - obsidian: Obsidian Noir (Signature Luxury Dark)
+ * - atelier: Minimalist Atelier (Editorial Light Gallery)
+ * - creative: Creative Studio (Vibrant Modern Duo)
  */
 ob_start(); // guard against any stray output corrupting the binary PDF
 
@@ -26,79 +26,111 @@ if (!can_download_pdf($user)) {
     exit;
 }
 
+$categories = get_categories();
+$rawCats = $_GET['categories'] ?? $_GET['category'] ?? 'all';
+$selectedCats = [];
+
+if (is_array($rawCats)) {
+    $selectedCats = array_values(array_intersect(array_map('trim', $rawCats), $categories));
+} elseif ($rawCats !== 'all' && !empty($rawCats)) {
+    $split = array_map('trim', explode(',', $rawCats));
+    $selectedCats = array_values(array_intersect($split, $categories));
+}
+
+$requestedTpl = clean($conn, $_GET['template'] ?? 'obsidian');
+if (!in_array($requestedTpl, ['obsidian', 'atelier', 'creative'])) {
+    $requestedTpl = 'obsidian';
+}
+
 // ---------- Gather portfolio data ----------
-$imgRes = mysqli_query($conn, "SELECT * FROM portfolio_images WHERE user_id=$userId ORDER BY id DESC");
+if (!empty($selectedCats)) {
+    $placeholders = implode(',', array_fill(0, count($selectedCats), '?'));
+    $types = 'i' . str_repeat('s', count($selectedCats));
+    $params = array_merge([$userId], $selectedCats);
+    $imgStmt = mysqli_prepare($conn, "SELECT * FROM portfolio_images WHERE user_id=? AND category IN ($placeholders) ORDER BY sort_order ASC, id DESC");
+    mysqli_stmt_bind_param($imgStmt, $types, ...$params);
+    mysqli_stmt_execute($imgStmt);
+    $imgRes = mysqli_stmt_get_result($imgStmt);
+    $catsToRender = $selectedCats;
+} else {
+    $imgRes = mysqli_query($conn, "SELECT * FROM portfolio_images WHERE user_id=$userId ORDER BY sort_order ASC, id DESC");
+    $catsToRender = $categories;
+}
+
 $allImages = [];
 while ($row = mysqli_fetch_assoc($imgRes)) $allImages[] = $row;
 
-$categories = get_categories();
+if (empty($allImages)) {
+    ob_end_clean();
+    die('This selection has no images yet. PDF cannot be generated.');
+}
+
 $skills = skills_to_array($user['skills']);
 
-// ---------- Build the PDF ----------
-$pdf = new SimplePdf();
+// ---------- Build the PDF with Selected Template ----------
+$pdf = new SimplePdf($requestedTpl);
 
-$contactParts = array_filter([$user['email'], $user['phone']]);
-$avatarPath = $user['avatar'] ? realpath(__DIR__ . '/../assets/uploads/avatars/' . $user['avatar']) : null;
-// Folivo's own brand accent color (matches the app's UI, converted to 0-1 RGB for the PDF)
-$brandColor = [0.486, 0.361, 0.988]; // #7C5CFC
-$pdf->addCoverBanner($user['name'], $user['profession'], implode('   |   ', $contactParts), $avatarPath ?: null, $brandColor);
+$contactParts = array_filter([$user['email'], $user['phone'], $user['address']]);
+$avatarPath = !empty($user['avatar']) ? realpath(__DIR__ . '/../assets/uploads/avatars/' . $user['avatar']) : null;
 
-if ($user['bio']) {
-    $pdf->addSectionTitle('About');
-    $pdf->addText($user['bio']);
-    $pdf->addSpacer(6);
+$catsWithImages = array_filter($catsToRender, function($cat) use ($allImages) {
+    return !empty(array_filter($allImages, fn($i) => $i['category'] === $cat));
+});
+
+// Page 1: Cover Page
+if (!empty($selectedCats)) {
+    $colName = count($selectedCats) <= 2 ? implode(' & ', $selectedCats) : 'CURATED';
+    $curatedDate = 'VERIFIED SAAQIFOLIO DESIGNER | ' . strtoupper($colName) . ' COLLECTION';
+} else {
+    $curatedDate = 'VERIFIED SAAQIFOLIO DESIGNER | CURATED ' . strtoupper(date('j M Y'));
 }
 
-if ($user['education']) {
-    $pdf->addSectionTitle('Education');
-    $pdf->addText($user['education']);
-    $pdf->addSpacer(6);
-}
+$pdf->renderCoverPage(
+    $user['name'],
+    $user['profession'],
+    $user['bio'] ?? '',
+    $contactParts,
+    $curatedDate,
+    $avatarPath
+);
 
-if ($user['experience']) {
-    $pdf->addSectionTitle('Experience');
-    $pdf->addText($user['experience']);
-    $pdf->addSpacer(6);
-}
+// Page 2: Profile & Stats & Tools Page
+$pdf->renderProfilePage(
+    $user['name'],
+    $user['profession'],
+    $user['bio'] ?? '',
+    count($allImages),
+    count($catsWithImages),
+    $skills,
+    $contactParts,
+    $user['education'] ?? '',
+    $user['experience'] ?? ''
+);
 
-if ($skills) {
-    $pdf->addSectionTitle('Software Expertise');
-    $pdf->addText(implode('   •   ', $skills), 10.5, false, [0.35, 0.33, 0.4]);
-    $pdf->addSpacer(6);
-}
+// Pages 3+: Category Showcase Pages
+foreach ($catsToRender as $cat) {
+    $imgsInCat = array_values(array_filter($allImages, fn($i) => $i['category'] === $cat));
+    if (empty($imgsInCat)) continue;
 
-// How many images per row, by category — matches how each category looks
-// best (logos are small/square so more fit per row; banners are wide so
-// fewer fit per row without getting too small to see).
-$colsByCategory = [
-    'Logo' => 4,
-    'UI/UX' => 3,
-    'Banner' => 2,
-];
+    $paths = [];
+    foreach ($imgsInCat as $img) {
+        $p = realpath(__DIR__ . '/../assets/uploads/portfolio/' . $img['filename']);
+        if ($p) $paths[] = $p;
+    }
 
-if ($allImages) {
-    $pdf->addSectionTitle('Portfolio');
-    foreach ($categories as $cat) {
-        $imgsInCat = array_values(array_filter($allImages, fn($i) => $i['category'] === $cat));
-        if (empty($imgsInCat)) continue;
-
-        $pdf->addText(strtoupper($cat) . '  (' . count($imgsInCat) . ')', 10.5, true, [0.3, 0.28, 0.35]);
-        $pdf->addSpacer(4);
-
-        $paths = [];
-        foreach ($imgsInCat as $img) {
-            $p = realpath(__DIR__ . '/../assets/uploads/portfolio/' . $img['filename']);
-            if ($p) $paths[] = $p;
-        }
-        $pdf->addImageGrid($paths, $colsByCategory[$cat] ?? 3);
-        $pdf->addSpacer(10);
+    if (!empty($paths)) {
+        $pdf->renderCategoryShowcasePage($cat, $paths, $user['name'], $user['profession']);
     }
 }
+
+// Final Closing Page: "Let's work together"
+$pdf->renderClosingPage($user['name'], $user['profession'], $contactParts);
 
 // Count this download against the trial limit (Pro accounts are unaffected by the check above).
 if (!$user['is_subscribed']) {
     increment_pdf_downloads($conn, $userId);
 }
 
-$filename = slugify($user['name']) . '-portfolio.pdf';
+$scopeSuffix = !empty($selectedCats) ? '-' . slugify(implode('-', $selectedCats)) : '';
+$filename = slugify($user['name']) . $scopeSuffix . '-portfolio.pdf';
 $pdf->output($filename);
