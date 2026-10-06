@@ -22,7 +22,7 @@ if ($isLocal) {
     // Update these with your Hostinger MySQL database details:
     // ============================================
     define('DB_HOST', 'localhost');
-    define('DB_USER', 'u195418993_folivo');
+    define('DB_USER', 'u195418993_SaaqiFolio');
     define('DB_PASS', 'Saydev@1234');
     define('DB_NAME', 'u195418993_SaaqiFolio');
     $liveScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
