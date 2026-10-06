@@ -24,7 +24,7 @@ if ($isLocal) {
     define('DB_HOST', 'localhost');
     define('DB_USER', 'u195418993_folivo');
     define('DB_PASS', 'Saydev@1234');
-    define('DB_NAME', 'u195418993_folivo');
+    define('DB_NAME', 'u195418993_SaaqiFolio');
     $liveScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     define('APP_URL', $liveScheme . '://' . ($httpHost ?: 'saaqifolio.com'));
 }
