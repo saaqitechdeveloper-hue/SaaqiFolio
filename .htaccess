@@ -1,31 +1,85 @@
 # SaaqiFolio - Apache Configuration (.htaccess)
-# Clean Extensionless URLs + Anti-Cache Headers
+# Security Hardening, Anti-Scraping, Clean Extensionless URLs & Caching
+
+# ----------------------------------------------------------------------
+# 1. SERVER SECURITY HARDENING
+# ----------------------------------------------------------------------
+
+# Disable Directory Browsing
+Options -Indexes
+
+# Disable Server Signature
+ServerSignature Off
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # 1. 301 Redirect browser from direct .php requests to clean extensionless URLs (only for GET)
+  # Block HTTP TRACE and TRACK methods (Mitigate XST vulnerabilities)
+  RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK) [NC]
+  RewriteRule .* - [F,L]
+
+  # Block hidden files and directories (e.g., .git, .env, .htaccess, etc.)
+  RewriteRule (^\.|/\.) - [F,L]
+
+  # Block direct access to protected project directories
+  RewriteRule ^(config|database|storage_uploads|vendor)/ - [F,L]
+
+  # Block direct downloads of composer/package manager config files
+  RewriteRule ^composer\.(json|lock)$ - [F,L]
+  RewriteRule ^package(-lock)?\.json$ - [F,L]
+
+  # Block unauthorized automated scrapers, offline site rippers & malicious tools
+  RewriteCond %{HTTP_USER_AGENT} (HTTrack|clshttp|archiver|loader|harvest|extract|grab|miner|nikto|sqlmap|nmap|dirbuster|gobuster|wpscan|masscan|Scrapy|Go-http-client|python-requests) [NC]
+  RewriteRule .* - [F,L]
+
+  # Block aggressive AI crawlers from bulk scraping / downloading private content
+  RewriteCond %{HTTP_USER_AGENT} (GPTBot|CCBot|anthropic-ai|ClaudeBot|Claude-Web|Bytespider|PetalBot|Amazonbot|ImagesiftBot) [NC]
+  RewriteRule .* - [F,L]
+
+  # ----------------------------------------------------------------------
+  # 2. URL REWRITING & ROUTING
+  # ----------------------------------------------------------------------
+
+  # 301 Redirect browser from direct .php requests to clean extensionless URLs (GET only)
   RewriteCond %{REQUEST_METHOD} !POST
   RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.*?)\.php(?:[?\s]|$) [NC]
   RewriteRule ^ /%1 [R=301,L,NE]
 
-  # 2. Public profile clean URL: /p/username -> /p.php?slug=username
+  # Public profile clean URL: /p/username -> /p.php?slug=username
   RewriteRule ^p/([a-zA-Z0-9_-]+)/?$ p.php?slug=$1 [L,QSA]
 
-  # 3. Rewrite extensionless URLs to .php files if matching file exists
+  # Rewrite extensionless URLs to .php files if matching file exists
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME}.php -f
   RewriteRule ^(.*)$ $1.php [L,QSA]
 </IfModule>
 
-# Prevent browser from aggressively caching dynamic PHP pages
+# ----------------------------------------------------------------------
+# 3. BLOCK ACCESS TO SENSITIVE FILE EXTENSIONS
+# ----------------------------------------------------------------------
+<FilesMatch "(?i)\.(env|sql|log|bak|backup|old|config|dist|md|json|lock|sh|bat|ini|ya?ml)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# ----------------------------------------------------------------------
+# 4. HTTP SECURITY HEADERS
+# ----------------------------------------------------------------------
 <IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set X-XSS-Protection "1; mode=block"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Anti-Cache for dynamic PHP pages to ensure fresh data
   <FilesMatch "\.(php|html|htm)$">
     Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
     Header set Pragma "no-cache"
     Header set Expires "0"
   </FilesMatch>
 </IfModule>
-
-# Security: prevent directory listing
-Options -Indexes

@@ -52,14 +52,17 @@ CREATE TABLE portfolio_images (
 
 -- ============================================
 -- Table: password_resets
--- (simple email-based reset, matching the original demo's flow —
---  no OTP/email verification is wired up; see README for production notes)
+-- Stores 4-digit OTP tokens for secure password resets (valid 5 minutes)
 -- ============================================
 CREATE TABLE password_resets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(150) NOT NULL,
+    otp VARCHAR(10) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    is_used TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_email (email)
+    INDEX idx_email (email),
+    INDEX idx_otp (otp)
 ) ENGINE=InnoDB;
 
 -- ============================================
@@ -140,4 +143,16 @@ ON DUPLICATE KEY UPDATE setting_key=setting_key;
 -- 3) Sort order and banner positioning:
 --    ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_pos_x INT DEFAULT 50;
 --    ALTER TABLE portfolio_images ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
--- ============================================
+--
+-- 4) Password Resets table:
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(150) NOT NULL,
+    otp VARCHAR(10) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    is_used TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX (email),
+    INDEX (otp)
+) ENGINE=InnoDB;
+

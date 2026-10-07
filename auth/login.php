@@ -65,6 +65,13 @@ include __DIR__ . '/../includes/og_meta.php';
         <a href="signup" class="auth-tab" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">Create account</a>
       </div>
 
+      <?php if (isset($_GET['reset']) && $_GET['reset'] === '1'): ?>
+        <div class="auth-success">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>Password reset successfully! Please sign in with your new password.</span>
+        </div>
+      <?php endif; ?>
+
       <?php if ($error): ?><div class="auth-error"><?php echo e($error); ?></div><?php endif; ?>
 
       <form method="POST">

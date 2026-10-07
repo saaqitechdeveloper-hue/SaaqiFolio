@@ -3427,6 +3427,105 @@ img {
   display: flex;
   align-items: center;
   gap: 8px;
+  line-height: 1.5;
+}
+
+.auth-success {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #a7f3d0;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+/* OTP Verification UI */
+.otp-container-wrap {
+  margin: 18px 0 20px 0;
+  text-align: center;
+}
+
+.otp-inputs-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0 16px 0;
+}
+
+.otp-digit-box {
+  width: 58px;
+  height: 64px;
+  font-family: var(--font-display, 'Space Grotesk'), monospace;
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  -webkit-appearance: none;
+}
+
+.otp-digit-box:focus {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.12);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25), 0 4px 18px rgba(168, 85, 247, 0.35);
+  transform: translateY(-2px);
+}
+
+.otp-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.otp-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #cbd5e1;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.btn-resend-otp {
+  background: none;
+  border: none;
+  color: var(--accent-purple-light, #a78bfa);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.18s ease;
+  text-decoration: underline;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-resend-otp:hover:not(:disabled) {
+  color: #ffffff;
+  background: rgba(168, 85, 247, 0.15);
+}
+
+.btn-resend-otp:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 .upgrade-link, .auth-link {
