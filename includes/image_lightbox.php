@@ -59,8 +59,10 @@
         const catTitle = catSection.querySelector('.cat-section-title');
         if (catTitle) cat = catTitle.textContent.trim();
       }
+      const full = img.dataset.fullSrc || img.getAttribute('data-full-src') || img.src;
       return {
-        src: img.src,
+        src: full,
+        thumb: img.src,
         category: cat,
         el: img
       };
@@ -73,10 +75,10 @@
     if (typeof targetSrc === 'number') {
       currentLightboxIdx = targetSrc;
     } else {
-      currentLightboxIdx = lightboxItems.findIndex(i => i.src === targetSrc);
+      currentLightboxIdx = lightboxItems.findIndex(i => i.src === targetSrc || i.thumb === targetSrc);
       if (currentLightboxIdx === -1 && targetSrc) {
         // Fallback for direct URL
-        lightboxItems.push({ src: targetSrc, category: targetCat });
+        lightboxItems.push({ src: targetSrc, thumb: targetSrc, category: targetCat });
         currentLightboxIdx = lightboxItems.length - 1;
       }
     }

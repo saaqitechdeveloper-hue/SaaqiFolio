@@ -180,10 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_delete_images'])
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         while ($row = mysqli_fetch_assoc($res)) {
-            $filePath = __DIR__ . '/../assets/uploads/portfolio/' . $row['filename'];
-            if (file_exists($filePath)) {
-                @unlink($filePath);
-            }
+            delete_portfolio_image_files($row['filename']);
         }
 
         // Delete from database
@@ -205,9 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_image'])) {
     mysqli_stmt_execute($stmt);
     $img = mysqli_stmt_get_result($stmt)->fetch_assoc();
     if ($img) {
-        if (file_exists(__DIR__ . '/../assets/uploads/portfolio/' . $img['filename'])) {
-            @unlink(__DIR__ . '/../assets/uploads/portfolio/' . $img['filename']);
-        }
+        delete_portfolio_image_files($img['filename']);
         $del = mysqli_prepare($conn, "DELETE FROM portfolio_images WHERE id=? AND user_id=?");
         mysqli_stmt_bind_param($del, 'ii', $imgId, $userId);
         mysqli_stmt_execute($del);

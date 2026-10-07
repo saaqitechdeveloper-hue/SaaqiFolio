@@ -82,9 +82,195 @@ function handle_image_upload($fileInput, $destDir, $maxMB = 30) {
 
     $tmpPath = $_FILES[$fileInput]['tmp_name'];
     if (@move_uploaded_file($tmpPath, $destination) || @copy($tmpPath, $destination)) {
+        if (strpos($destDir, 'portfolio') !== false) {
+            generate_portfolio_thumbnail($destination);
+        }
         return $newName;
     }
     return false;
+}
+
+/**
+ * Generate an ultra-compressed, responsive AVIF thumbnail (with WebP/JPEG fallback)
+ * Keeps max dimension at 720px to prevent layout freezing and memory bloat.
+ */
+function generate_portfolio_thumbnail($sourcePath, $thumbDir = null, $maxDim = 720, $quality = 75) {
+    if (!file_exists($sourcePath)) return false;
+
+    if ($thumbDir === null) {
+        $thumbDir = dirname($sourcePath) . '/thumbs';
+    }
+    if (!is_dir($thumbDir)) {
+        @mkdir($thumbDir, 0777, true);
+    }
+
+    $baseName = pathinfo($sourcePath, PATHINFO_FILENAME);
+    $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+
+    // For SVGs, copy directly to thumbs
+    if ($ext === 'svg') {
+        @copy($sourcePath, $thumbDir . '/' . $baseName . '.svg');
+        return $baseName . '.svg';
+    }
+
+    $info = @getimagesize($sourcePath);
+    if (!$info) return false;
+
+    $origW = (int) $info[0];
+    $origH = (int) $info[1];
+    $mime = $info['mime'] ?? '';
+
+    $srcImg = null;
+    switch ($mime) {
+        case 'image/jpeg':
+            $srcImg = @imagecreatefromjpeg($sourcePath);
+            break;
+        case 'image/png':
+            $srcImg = @imagecreatefrompng($sourcePath);
+            break;
+        case 'image/webp':
+            if (function_exists('imagecreatefromwebp')) {
+                $srcImg = @imagecreatefromwebp($sourcePath);
+            }
+            break;
+        case 'image/avif':
+            if (function_exists('imagecreatefromavif')) {
+                $srcImg = @imagecreatefromavif($sourcePath);
+            }
+            break;
+        case 'image/gif':
+            $srcImg = @imagecreatefromgif($sourcePath);
+            break;
+        case 'image/bmp':
+            if (function_exists('imagecreatefrombmp')) {
+                $srcImg = @imagecreatefrombmp($sourcePath);
+            }
+            break;
+    }
+
+    if (!$srcImg && function_exists('imagecreatefromstring')) {
+        $content = @file_get_contents($sourcePath);
+        if ($content) $srcImg = @imagecreatefromstring($content);
+    }
+
+    if (!$srcImg) return false;
+
+    // Auto-rotate based on EXIF tag (mobile camera photos)
+    if (function_exists('exif_read_data') && ($mime === 'image/jpeg' || $mime === 'image/tiff')) {
+        try {
+            $exif = @exif_read_data($sourcePath);
+            if (!empty($exif['Orientation'])) {
+                switch ((int)$exif['Orientation']) {
+                    case 3:
+                        $srcImg = imagerotate($srcImg, 180, 0);
+                        break;
+                    case 6:
+                        $srcImg = imagerotate($srcImg, -90, 0);
+                        $t = $origW; $origW = $origH; $origH = $t;
+                        break;
+                    case 8:
+                        $srcImg = imagerotate($srcImg, 90, 0);
+                        $t = $origW; $origW = $origH; $origH = $t;
+                        break;
+                }
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    // Scale dimensions proportionally
+    if ($origW > $maxDim || $origH > $maxDim) {
+        $ratio = min($maxDim / $origW, $maxDim / $origH);
+        $newW = max(1, (int) round($origW * $ratio));
+        $newH = max(1, (int) round($origH * $ratio));
+    } else {
+        $newW = $origW;
+        $newH = $origH;
+    }
+
+    $dstImg = imagecreatetruecolor($newW, $newH);
+    imagealphablending($dstImg, false);
+    imagesavealpha($dstImg, true);
+    $transparent = imagecolorallocatealpha($dstImg, 255, 255, 255, 127);
+    imagefilledrectangle($dstImg, 0, 0, $newW, $newH, $transparent);
+    imagecopyresampled($dstImg, $srcImg, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+
+    // Save as AVIF (highest compression + modern fidelity)
+    $savedName = false;
+    if (function_exists('imageavif')) {
+        $targetFile = $thumbDir . '/' . $baseName . '.avif';
+        if (@imageavif($dstImg, $targetFile, $quality)) {
+            $savedName = $baseName . '.avif';
+        }
+    }
+    // WebP fallback
+    if (!$savedName && function_exists('imagewebp')) {
+        $targetFile = $thumbDir . '/' . $baseName . '.webp';
+        if (@imagewebp($dstImg, $targetFile, $quality)) {
+            $savedName = $baseName . '.webp';
+        }
+    }
+    // JPEG fallback
+    if (!$savedName) {
+        $targetFile = $thumbDir . '/' . $baseName . '.jpg';
+        if (@imagejpeg($dstImg, $targetFile, max(60, $quality))) {
+            $savedName = $baseName . '.jpg';
+        }
+    }
+
+    @imagedestroy($srcImg);
+    @imagedestroy($dstImg);
+
+    return $savedName;
+}
+
+/**
+ * Returns optimized thumbnail URL for portfolio images (AVIF/WebP), with fallback to original.
+ */
+function get_portfolio_thumbnail_url($filename, $baseUrl = '..') {
+    if (empty($filename)) return '';
+
+    $baseName = pathinfo($filename, PATHINFO_FILENAME);
+    $origPath = __DIR__ . '/../assets/uploads/portfolio/' . $filename;
+    $thumbDir = __DIR__ . '/../assets/uploads/portfolio/thumbs';
+
+    if (file_exists($thumbDir . '/' . $baseName . '.avif')) {
+        return rtrim($baseUrl, '/') . '/assets/uploads/portfolio/thumbs/' . $baseName . '.avif';
+    }
+    if (file_exists($thumbDir . '/' . $baseName . '.webp')) {
+        return rtrim($baseUrl, '/') . '/assets/uploads/portfolio/thumbs/' . $baseName . '.webp';
+    }
+    if (file_exists($thumbDir . '/' . $baseName . '.jpg')) {
+        return rtrim($baseUrl, '/') . '/assets/uploads/portfolio/thumbs/' . $baseName . '.jpg';
+    }
+    if (file_exists($thumbDir . '/' . $baseName . '.svg')) {
+        return rtrim($baseUrl, '/') . '/assets/uploads/portfolio/thumbs/' . $baseName . '.svg';
+    }
+
+    // Lazy generation if thumbnail missing but original exists
+    if (file_exists($origPath)) {
+        $thumbName = generate_portfolio_thumbnail($origPath, $thumbDir);
+        if ($thumbName) {
+            return rtrim($baseUrl, '/') . '/assets/uploads/portfolio/thumbs/' . $thumbName;
+        }
+    }
+
+    return rtrim($baseUrl, '/') . '/assets/uploads/portfolio/' . $filename;
+}
+
+/**
+ * Deletes original image and any corresponding thumbnails (AVIF/WebP/JPG)
+ */
+function delete_portfolio_image_files($filename) {
+    if (empty($filename)) return;
+    $baseName = pathinfo($filename, PATHINFO_FILENAME);
+    $origPath = __DIR__ . '/../assets/uploads/portfolio/' . $filename;
+    $thumbDir = __DIR__ . '/../assets/uploads/portfolio/thumbs';
+
+    if (file_exists($origPath)) @unlink($origPath);
+    if (file_exists($thumbDir . '/' . $baseName . '.avif')) @unlink($thumbDir . '/' . $baseName . '.avif');
+    if (file_exists($thumbDir . '/' . $baseName . '.webp')) @unlink($thumbDir . '/' . $baseName . '.webp');
+    if (file_exists($thumbDir . '/' . $baseName . '.jpg')) @unlink($thumbDir . '/' . $baseName . '.jpg');
+    if (file_exists($thumbDir . '/' . $baseName . '.svg')) @unlink($thumbDir . '/' . $baseName . '.svg');
 }
 
 // CV upload handler (pdf/doc/docx). Returns [storedName, originalName] or false/null.

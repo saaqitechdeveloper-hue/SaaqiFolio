@@ -338,7 +338,8 @@ include __DIR__ . '/../includes/og_meta.php';
             <?php elseif ($featuredRes->num_rows): ?>
               <div class="banner-collage">
                 <?php mysqli_data_seek($featuredRes, 0); while ($img = mysqli_fetch_assoc($featuredRes)): ?>
-                  <img src="../assets/uploads/portfolio/<?php echo e($img['filename']); ?>" alt="Featured preview">
+                  <?php $thumb = get_portfolio_thumbnail_url($img['filename'], '..'); ?>
+                  <img src="<?php echo e($thumb); ?>" alt="Featured preview" loading="lazy" decoding="async">
                 <?php endwhile; ?>
               </div>
               <div class="banner-overlay"></div>

@@ -18,7 +18,11 @@
       </span>
     </label>
 
-    <img src="../assets/uploads/portfolio/<?php echo e($img['filename']); ?>" class="thumb" loading="lazy" alt="Portfolio asset">
+    <?php 
+      $thumbUrl = get_portfolio_thumbnail_url($img['filename'], '..');
+      $fullUrl  = '../assets/uploads/portfolio/' . e($img['filename']);
+    ?>
+    <img src="<?php echo e($thumbUrl); ?>" data-full-src="<?php echo e($fullUrl); ?>" class="thumb" loading="lazy" decoding="async" width="300" height="300" alt="Portfolio asset">
 
     <div class="card-overlay-actions">
       <form method="POST" class="delete-img-form" onsubmit="return confirm('Are you sure you want to delete this piece?');">

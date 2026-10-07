@@ -427,7 +427,7 @@ class SimplePdf {
         $origH = $info[1];
         $mime = $info['mime'] ?? '';
 
-        $maxDim = 1600;
+        $maxDim = 1000;
         $scale = 1.0;
         if ($origW > $maxDim || $origH > $maxDim) {
             $scale = min($maxDim / (float)$origW, $maxDim / (float)$origH);
@@ -445,21 +445,53 @@ class SimplePdf {
                 'image/jpeg' => @imagecreatefromjpeg($real),
                 'image/png'  => @imagecreatefrompng($real),
                 'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($real) : null,
+                'image/avif' => function_exists('imagecreatefromavif') ? @imagecreatefromavif($real) : null,
+                'image/bmp'  => function_exists('imagecreatefrombmp') ? @imagecreatefrombmp($real) : null,
+                'image/gif'  => @imagecreatefromgif($real),
                 default      => null,
             };
+            if (!$src && function_exists('imagecreatefromstring')) {
+                $rawContent = @file_get_contents($real);
+                if ($rawContent) $src = @imagecreatefromstring($rawContent);
+            }
             if (!$src) return null;
+
+            // Auto-rotate if EXIF orientation is present
+            if (function_exists('exif_read_data') && ($mime === 'image/jpeg' || $mime === 'image/tiff')) {
+                try {
+                    $exif = @exif_read_data($real);
+                    if (!empty($exif['Orientation'])) {
+                        switch ((int)$exif['Orientation']) {
+                            case 3:
+                                $src = imagerotate($src, 180, 0);
+                                break;
+                            case 6:
+                                $src = imagerotate($src, -90, 0);
+                                $t = $origW; $origW = $origH; $origH = $t;
+                                $t = $targetW; $targetW = $targetH; $targetH = $t;
+                                break;
+                            case 8:
+                                $src = imagerotate($src, 90, 0);
+                                $t = $origW; $origW = $origH; $origH = $t;
+                                $t = $targetW; $targetW = $targetH; $targetH = $t;
+                                break;
+                        }
+                    }
+                } catch (\Throwable $e) {}
+            }
 
             $dst = imagecreatetruecolor($targetW, $targetH);
             // Solid background under transparent images matching theme background
             $bgCol = imagecolorallocate($dst, $this->cBg[0], $this->cBg[1], $this->cBg[2]);
             imagefilledrectangle($dst, 0, 0, $targetW, $targetH, $bgCol);
             imagecopyresampled($dst, $src, 0, 0, 0, 0, $targetW, $targetH, $origW, $origH);
-            imagedestroy($src);
+            @imagedestroy($src);
 
             ob_start();
-            imagejpeg($dst, null, 88);
+            imagejpeg($dst, null, 82);
             $data = ob_get_clean();
-            imagedestroy($dst);
+            @imagedestroy($dst);
+            if (function_exists('gc_collect_cycles')) { @gc_collect_cycles(); }
             $filter = '/DCTDecode';
             $w = $targetW;
             $h = $targetH;

@@ -8,6 +8,8 @@
  * - creative: Creative Studio (Vibrant Modern Duo)
  */
 ob_start(); // guard against any stray output corrupting the binary PDF
+@ini_set('memory_limit', '512M');
+@set_time_limit(180);
 
 require_once __DIR__ . '/../includes/auth_check.php';
 require_once __DIR__ . '/../config/db.php';

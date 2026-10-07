@@ -183,7 +183,8 @@ $assetBase = get_site_root_url();
         <?php elseif ($bannerImages): ?>
           <div class="banner-collage">
             <?php foreach ($bannerImages as $img): ?>
-              <img src="<?php echo $assetBase; ?>/assets/uploads/portfolio/<?php echo e($img['filename']); ?>">
+              <?php $thumb = get_portfolio_thumbnail_url($img['filename'], $assetBase); ?>
+              <img src="<?php echo e($thumb); ?>" loading="lazy" decoding="async" alt="Showcase artwork">
             <?php endforeach; ?>
           </div>
           <div class="banner-overlay"></div>
@@ -339,7 +340,11 @@ $assetBase = get_site_root_url();
               <?php foreach ($imgs as $img): ?>
                 <div class="card">
                   <div class="thumb-wrap">
-                    <img src="<?php echo $assetBase; ?>/assets/uploads/portfolio/<?php echo e($img['filename']); ?>" class="thumb" loading="lazy">
+                    <?php 
+                      $thumb = get_portfolio_thumbnail_url($img['filename'], $assetBase);
+                      $full  = $assetBase . '/assets/uploads/portfolio/' . e($img['filename']);
+                    ?>
+                    <img src="<?php echo e($thumb); ?>" data-full-src="<?php echo e($full); ?>" class="thumb" loading="lazy" decoding="async" width="300" height="300" alt="Portfolio asset">
                   </div>
                 </div>
               <?php endforeach; ?>

@@ -4,6 +4,8 @@
  * Generates an executive, luxury obsidian-glass styled PDF proposal.
  */
 ob_start();
+@ini_set('memory_limit', '512M');
+@set_time_limit(180);
 
 session_start();
 require_once __DIR__ . '/config/db.php';
@@ -135,4 +137,5 @@ if (!$user['is_subscribed']) {
 }
 
 $catSuffix = !empty($selectedCats) ? '-' . slugify(implode('-', $selectedCats)) : '';
+$fileSlug = slugify($user['name'] ?: $slug ?: 'portfolio');
 $pdf->output($fileSlug . $catSuffix . '-portfolio.pdf');

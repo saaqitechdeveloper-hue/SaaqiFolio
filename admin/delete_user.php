@@ -27,8 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
     }
     $imgRes = mysqli_query($conn, "SELECT filename FROM portfolio_images WHERE user_id=$id");
     while ($img = mysqli_fetch_assoc($imgRes)) {
-        $p = __DIR__ . '/../assets/uploads/portfolio/' . $img['filename'];
-        if (file_exists($p)) @unlink($p);
+        delete_portfolio_image_files($img['filename']);
     }
 
     // portfolio_images and payments rows are removed automatically via ON DELETE CASCADE.

@@ -167,56 +167,33 @@ function wireDropzone(zoneEl, inputEl, onFiles) {
 }
 
 /* ──────────────────────────────────────────────
-   AJAX UPLOAD WITH LOADER
+   AJAX UPLOAD WITH CONCURRENT QUEUE & LOADER
 ────────────────────────────────────────────── */
 /**
- * Uploads files via AJAX, shows the loader overlay with timer, reloads on success.
+ * Uploads files via AJAX using a resilient concurrent worker queue (max 3 concurrent uploads),
+ * preventing browser tab freezes and PHP payload limits when uploading 20-100+ images.
  * @param {HTMLFormElement} form
  * @param {HTMLInputElement} fileInput
  * @param {FileList} files
  * @param {{ overlay, timerEl, titleEl, subEl }} loaderEls
  */
-function ajaxUploadFiles(form, fileInput, files, loaderEls) {
+async function ajaxUploadFiles(form, fileInput, files, loaderEls) {
   if (!files || !files.length) return;
 
-  try {
-    const dt = new DataTransfer();
-    Array.from(files).forEach(f => dt.items.add(f));
-    if (fileInput) {
-      fileInput.files = dt.files;
-    }
-  } catch (e) {
-    // Graceful fallback if DataTransfer assignment is restricted
-  }
-
-  const fd = new FormData(form || undefined);
-  // Guarantee files are in the FormData explicitly!
-  fd.delete('images[]');
-  Array.from(files).forEach(f => {
-    fd.append('images[]', f);
-  });
-  if (!fd.has('upload_images')) fd.append('upload_images', '1');
-  if (!fd.has('ajax')) fd.append('ajax', '1');
+  const fileQueue = Array.from(files);
+  const totalFiles = fileQueue.length;
+  const CONCURRENCY = Math.min(3, totalFiles);
 
   const { overlay, timerEl, titleEl, subEl } = loaderEls || {};
-
-  const messages = [
-    'Analyzing your images with AI...',
-    'Classifying content and categories...',
-    'Almost there — wrapping things up...',
-    'Finalizing your portfolio update...'
-  ];
 
   let seconds = 0;
   if (overlay) overlay.hidden = false;
   if (timerEl) timerEl.textContent = '0s';
-  if (titleEl) titleEl.textContent = messages[0];
+  if (titleEl) titleEl.textContent = `Uploading 1 of ${totalFiles} pieces (0%)...`;
 
   const tick = setInterval(function () {
     seconds++;
     if (timerEl) timerEl.textContent = seconds + 's';
-    const msgIndex = Math.min(Math.floor(seconds / 5), messages.length - 1);
-    if (titleEl) titleEl.textContent = messages[msgIndex];
   }, 1000);
 
   let targetUrl = (form && form.getAttribute('action')) ? form.getAttribute('action') : '';
@@ -224,33 +201,77 @@ function ajaxUploadFiles(form, fileInput, files, loaderEls) {
     targetUrl = window.location.pathname + window.location.search;
   }
 
-  fetch(targetUrl, { method: 'POST', body: fd })
-    .then(async r => {
-      const text = await r.text();
+  let queueIdx = 0;
+  let successCount = 0;
+  let failCount = 0;
+  let lastError = '';
+
+  function updateProgress() {
+    const done = successCount + failCount;
+    const pct = Math.round((done / totalFiles) * 100);
+    const current = Math.min(done + 1, totalFiles);
+    if (titleEl) {
+      titleEl.textContent = `Uploading ${current} of ${totalFiles} pieces (${pct}%)...`;
+    }
+  }
+
+  async function worker() {
+    while (queueIdx < fileQueue.length) {
+      const idx = queueIdx++;
+      const file = fileQueue[idx];
+
+      updateProgress();
+
+      const fd = new FormData();
+      fd.append('single_image', file);
+      fd.append('upload_images', '1');
+      fd.append('ajax', '1');
+
       try {
-        return JSON.parse(text);
+        const resp = await fetch(targetUrl, { method: 'POST', body: fd });
+        const text = await resp.text();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          console.error('Server response error on file', file.name, text);
+        }
+
+        if (data && data.success) {
+          successCount += (data.uploaded || 1);
+        } else {
+          failCount++;
+          if (data && data.error) lastError = data.error;
+        }
       } catch (err) {
-        console.error('Raw server response:', text);
-        throw new Error('Invalid JSON response from server');
+        console.error('Network upload error on file', file.name, err);
+        failCount++;
       }
-    })
-    .then(data => {
-      clearInterval(tick);
-      if (data && data.debug) console.log('AI classify debug:', data.debug);
-      if (data && data.error && !data.success) {
-        if (overlay) overlay.hidden = true;
-        showToast(data.error, 'danger');
-        return;
-      }
-      // Redirect to All category view so new image is immediately visible regardless of previous filter
+
+      updateProgress();
+    }
+  }
+
+  const workers = [];
+  for (let i = 0; i < CONCURRENCY; i++) {
+    workers.push(worker());
+  }
+
+  await Promise.all(workers);
+  clearInterval(tick);
+
+  if (overlay) overlay.hidden = true;
+
+  if (successCount > 0) {
+    if (typeof showToast === 'function') {
+      showToast(`${successCount} artwork piece(s) uploaded and converted to AVIF!`, 'success');
+    }
+    setTimeout(() => {
       window.location.href = 'portfolio?category=All';
-    })
-    .catch(function (err) {
-      clearInterval(tick);
-      if (overlay) overlay.hidden = true;
-      console.error('Upload error:', err);
-      showToast('Upload failed. Please check file format and size.', 'danger');
-    });
+    }, 350);
+  } else {
+    showToast(lastError || 'Upload failed. Please check file formats and size.', 'danger');
+  }
 }
 
 /**
