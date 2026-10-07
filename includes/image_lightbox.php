@@ -157,15 +157,15 @@
     updateZoomBadge();
   }
 
-  // Zoom In
+  // Zoom In (10% increment)
   window.lightboxZoomIn = function() {
-    currentZoom = Math.min(4.0, +(currentZoom + 0.35).toFixed(2));
+    currentZoom = Math.min(4.0, +(currentZoom + 0.10).toFixed(2));
     applyTransform(true);
   };
 
-  // Zoom Out
+  // Zoom Out (10% decrement)
   window.lightboxZoomOut = function() {
-    currentZoom = Math.max(1.0, +(currentZoom - 0.35).toFixed(2));
+    currentZoom = Math.max(1.0, +(currentZoom - 0.10).toFixed(2));
     if (currentZoom <= 1.01) {
       currentZoom = 1.0;
       panX = 0;
