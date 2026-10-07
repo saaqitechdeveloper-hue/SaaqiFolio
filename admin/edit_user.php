@@ -106,9 +106,16 @@ include __DIR__ . '/../includes/og_meta.php';
   <div class="admin-main">
     <a href="users" style="color:var(--text-muted);text-decoration:none;font-size:13px;">← Back to all users</a>
 
-    <div class="page-head" style="margin-top:14px;">
-      <div class="page-title"><?php echo e($user['name']); ?></div>
-      <div class="page-desc"><?php echo e($user['public_slug']); ?> · Joined <?php echo date('d M Y', strtotime($user['created_at'])); ?></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:14px;margin-bottom:18px;">
+      <div class="page-head" style="margin:0;">
+        <div class="page-title"><?php echo e($user['name']); ?></div>
+        <div class="page-desc"><?php echo e($user['public_slug']); ?> · Joined <?php echo date('d M Y', strtotime($user['created_at'])); ?></div>
+      </div>
+      <a href="login_as_user?id=<?php echo $user['id']; ?>" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;display:inline-flex;align-items:center;gap:8px;"
+         onclick="return confirm('Directly login to <?php echo e(addslashes($user['name'])); ?>\'s account in Admin Mode?');">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        <span>Login as User (Admin Mode)</span>
+      </a>
     </div>
 
     <?php if ($success): ?><div class="auth-error" style="background:#3DDC9726;color:#3DDC97;"><?php echo e($success); ?></div><?php endif; ?>

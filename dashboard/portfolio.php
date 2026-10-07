@@ -778,6 +778,7 @@ if (!empty($canExportPdf) && !empty($allImages)) {
     include __DIR__ . '/../includes/pdf_export_modal.php';
 }
 ?>
+<?php include __DIR__ . '/../includes/image_lightbox.php'; ?>
 <?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

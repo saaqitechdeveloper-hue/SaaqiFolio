@@ -92,6 +92,12 @@ include __DIR__ . '/../includes/og_meta.php';
         User updated successfully.
       </div>
     <?php endif; ?>
+    <?php if (isset($_GET['returned'])): ?>
+      <div class="auth-error" style="background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.35);color:#d8b4fe;" data-auto-dismiss="4000">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Exited Admin Mode & returned to Admin Panel successfully.
+      </div>
+    <?php endif; ?>
 
     <!-- Search & Filter -->
     <form method="GET" class="admin-search-row" id="filterForm">
@@ -177,6 +183,10 @@ include __DIR__ . '/../includes/og_meta.php';
                   <td style="color:var(--text-faint);font-size:12.5px;"><?php echo date('d M Y', strtotime($u['created_at'])); ?></td>
                   <td style="text-align:right;white-space:nowrap;">
                     <div style="display:inline-flex;gap:6px;align-items:center;justify-content:flex-end;">
+                      <a href="login_as_user?id=<?php echo $u['id']; ?>" class="icon-btn" style="color:var(--accent-purple-light);border-color:rgba(168,85,247,0.35);background:rgba(168,85,247,0.08);" title="Login as <?php echo e($u['name']); ?> (Admin Mode)"
+                         onclick="return confirm('Directly login to <?php echo e(addslashes($u['name'])); ?>\'s account in Admin Mode?');">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                      </a>
                       <a href="edit_user?id=<?php echo $u['id']; ?>" class="icon-btn" title="Edit user">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </a>
