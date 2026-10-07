@@ -603,7 +603,7 @@ function format_embed_video_url($url) {
 
     // Vimeo: vimeo.com/ID or player.vimeo.com/video/ID
     if (preg_match('/vimeo\.com\/(?:video\/)?([0-9]+)/', $url, $m)) {
-        return 'https://player.vimeo.com/video/' . $m[1] . '?autoplay=1';
+        return 'https://player.vimeo.com/video/' . $m[1] . '?autoplay=1&title=0&byline=0&portrait=0';
     }
 
     return $url;
@@ -623,6 +623,30 @@ function get_site_root_url() {
     $scriptDir = str_replace('\\', '/', dirname($script));
     $base = preg_replace('#/(auth|dashboard|admin|includes|database)$#', '', $scriptDir);
     return rtrim($base, '/');
+}
+
+// Resolves local filesystem path for an uploaded asset (avatars, portfolio, banners, cv).
+// If running on localhost and the file is missing locally, fetches and caches it from
+// production so server-side operations (like PDF generation) work without broken images.
+function resolve_upload_path($subfolder, $filename) {
+    if (empty($filename)) return null;
+    $localPath = __DIR__ . '/../assets/uploads/' . trim($subfolder, '/') . '/' . $filename;
+    if (file_exists($localPath)) {
+        return $localPath;
+    }
+    $httpHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $isLocal = in_array($httpHost, ['localhost', '127.0.0.1', '::1']) || str_starts_with($httpHost, 'localhost:');
+    if ($isLocal) {
+        $liveUrl = 'https://saaqifolio.com/assets/uploads/' . trim($subfolder, '/') . '/' . rawurlencode($filename);
+        $dir = dirname($localPath);
+        if (!is_dir($dir)) @mkdir($dir, 0777, true);
+        $content = @file_get_contents($liveUrl);
+        if ($content !== false && strlen($content) > 0) {
+            @file_put_contents($localPath, $content);
+            return $localPath;
+        }
+    }
+    return null;
 }
 
 

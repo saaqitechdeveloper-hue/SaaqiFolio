@@ -74,7 +74,7 @@ $skills = skills_to_array($user['skills']);
 $pdf = new SimplePdf($requestedTpl);
 
 $contactParts = array_filter([$user['email'], $user['phone'], $user['address']]);
-$avatarPath = !empty($user['avatar']) ? realpath(__DIR__ . '/assets/uploads/avatars/' . $user['avatar']) : null;
+$avatarPath = !empty($user['avatar']) ? resolve_upload_path('avatars', $user['avatar']) : null;
 
 $catsWithImages = array_filter($catsToRender, function($cat) use ($allImages) {
     return !empty(array_filter($allImages, fn($i) => $i['category'] === $cat));
@@ -117,7 +117,7 @@ foreach ($catsToRender as $cat) {
 
     $paths = [];
     foreach ($imgsInCat as $img) {
-        $p = realpath(__DIR__ . '/assets/uploads/portfolio/' . $img['filename']);
+        $p = resolve_upload_path('portfolio', $img['filename']);
         if ($p) $paths[] = $p;
     }
 

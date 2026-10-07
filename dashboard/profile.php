@@ -319,7 +319,7 @@ include __DIR__ . '/../includes/og_meta.php';
         </div>
 
         <!-- Glassmorphic Banner Container -->
-        <?php $hasCustomBanner = !empty($user['banner']) && file_exists(__DIR__ . '/../assets/uploads/banners/' . $user['banner']); ?>
+        <?php $hasCustomBanner = !empty($user['banner']); ?>
         <div class="profile-banner-container">
           <div class="profile-banner <?php echo $hasCustomBanner || $featuredRes->num_rows ? 'has-images' : ''; ?>">
             <?php if ($hasCustomBanner): ?>

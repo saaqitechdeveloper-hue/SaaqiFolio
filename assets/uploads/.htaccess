@@ -1,0 +1,23 @@
+# ==============================================================================
+# SaaqiFolio - Smart Live Media Fallback for Local Development
+# ==============================================================================
+# When running on Localhost / 127.0.0.1:
+# If an uploaded user image, video, banner, or CV does NOT exist on local disk,
+# Apache will automatically fetch / redirect (302) to Hostinger production server.
+#
+# On Hostinger (Production):
+# The HTTP_HOST is saaqifolio.com (not localhost), so this rule NEVER runs
+# and production files are served directly without any redirection.
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Only apply fallback when developing on localhost / 127.0.0.1
+    RewriteCond %{HTTP_HOST} ^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
+    # Check that the requested media file does not exist locally
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    # Redirect transparently to production server
+    RewriteRule ^(.*)$ https://saaqifolio.com/assets/uploads/$1 [L,R=302]
+</IfModule>

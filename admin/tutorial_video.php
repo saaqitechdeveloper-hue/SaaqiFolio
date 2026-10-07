@@ -13,7 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_uploaded_video
         @unlink(__DIR__ . '/../assets/uploads/videos/' . $existingFile);
     }
     set_setting('tutorial_video_file', '');
-    $success = 'Uploaded video file was successfully removed.';
+    set_setting('tutorial_video_type', 'url');
+    $success = 'Uploaded video file was successfully removed. Video source switched to External Video Link.';
 }
 
 // Handle Save of tutorial video settings
@@ -37,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_tutorial_video']
             }
             $existingFile = $uploaded[0];
             set_setting('tutorial_video_file', $existingFile);
+            $type = 'file';
         } elseif ($uploaded === false) {
             $error = $uploadError ?: 'Video upload failed. Please upload a valid MP4, WebM, or MOV file under 100MB.';
         }
@@ -46,8 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_tutorial_video']
     $fileOnDisk = $existingFile && file_exists(__DIR__ . '/../assets/uploads/videos/' . $existingFile);
     if ($type === 'file' && !$fileOnDisk) {
         if (!$error) {
-            $error = 'No video file found. Please upload a video file before setting mode to "Upload Video Directly".';
+            $error = 'No video file found on server. Please upload a video file or keep External Video Link selected.';
         }
+        $type = 'url';
     }
 
     set_setting('tutorial_video_enabled', $enabled);
@@ -156,18 +159,17 @@ include __DIR__ . '/../includes/og_meta.php';
           <!-- Video Source Selector (Tabs) -->
           <div style="margin-bottom:18px;">
             <label style="font-size:12.5px;font-weight:600;margin-bottom:8px;display:block;">Choose Video Source</label>
+            <input type="hidden" name="tutorial_video_type" id="tutorialVideoTypeInput" value="<?php echo e($videoType); ?>">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:rgba(0,0,0,0.3);padding:6px;border-radius:12px;border:1px solid var(--glass-border);">
-              <label class="source-tab-btn <?php echo $videoType === 'url' ? 'active' : ''; ?>" id="tabBtnUrl" onclick="switchVideoSource('url')">
-                <input type="radio" name="tutorial_video_type" value="url" <?php echo $videoType === 'url' ? 'checked' : ''; ?> style="display:none;">
+              <button type="button" class="source-tab-btn <?php echo $videoType === 'url' ? 'active' : ''; ?>" id="tabBtnUrl" onclick="switchVideoSource('url')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 <span>External Video Link</span>
-              </label>
+              </button>
 
-              <label class="source-tab-btn <?php echo $videoType === 'file' ? 'active' : ''; ?>" id="tabBtnFile" onclick="switchVideoSource('file')">
-                <input type="radio" name="tutorial_video_type" value="file" <?php echo $videoType === 'file' ? 'checked' : ''; ?> style="display:none;">
+              <button type="button" class="source-tab-btn <?php echo $videoType === 'file' ? 'active' : ''; ?>" id="tabBtnFile" onclick="switchVideoSource('file')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span>Upload Video Directly</span>
-              </label>
+              </button>
             </div>
           </div>
 
@@ -300,8 +302,15 @@ include __DIR__ . '/../includes/og_meta.php';
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-muted);
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  width: 100%;
   transition: all 0.2s;
   user-select: none;
+}
+.source-tab-btn:hover {
+  color: #fff;
 }
 .source-tab-btn.active {
   background: var(--grad-primary);
@@ -329,25 +338,24 @@ include __DIR__ . '/../includes/og_meta.php';
 
 <script>
 function switchVideoSource(type) {
+  const hiddenInput = document.getElementById('tutorialVideoTypeInput');
+  if (hiddenInput) hiddenInput.value = type;
+
   const tabUrl = document.getElementById('tabBtnUrl');
   const tabFile = document.getElementById('tabBtnFile');
   const secUrl = document.getElementById('sectionUrl');
   const secFile = document.getElementById('sectionFile');
-  const radioUrl = document.querySelector('input[name="tutorial_video_type"][value="url"]');
-  const radioFile = document.querySelector('input[name="tutorial_video_type"][value="file"]');
 
   if (type === 'url') {
     tabUrl.classList.add('active');
     tabFile.classList.remove('active');
     secUrl.style.display = 'block';
     secFile.style.display = 'none';
-    if (radioUrl) radioUrl.checked = true;
   } else {
     tabFile.classList.add('active');
     tabUrl.classList.remove('active');
     secFile.style.display = 'block';
     secUrl.style.display = 'none';
-    if (radioFile) radioFile.checked = true;
   }
 }
 
