@@ -4357,3 +4357,121 @@ body.lightbox-open {
   .img-lightbox-nav.prev { left: 8px; }
   .img-lightbox-nav.next { right: 8px; }
 }
+
+/* ==========================================================================
+   PDF AJAX DOWNLOAD LOADER & SUCCESS MODAL
+   ========================================================================== */
+.pdf-loading-spinner-wrap {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-spinner-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(139, 92, 246, 0.2);
+  border-top-color: #a855f7;
+  border-right-color: #ec4899;
+  animation: pdfSpin 1s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+}
+
+@keyframes pdfSpin {
+  to { transform: rotate(360deg); }
+}
+
+.pdf-spinner-glow {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.35) 0%, transparent 70%);
+  animation: pdfGlowPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pdfGlowPulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.pdf-spinner-icon {
+  position: relative;
+  z-index: 2;
+  color: #c4b5fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-gen-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.pdf-gen-progress-bar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6 0%, #ec4899 100%);
+  border-radius: 4px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pdf-success-badge-orb {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(61, 220, 151, 0.3) 0%, rgba(13, 10, 26, 0.95) 100%);
+  border: 2px solid rgba(61, 220, 151, 0.65);
+  box-shadow: 0 0 32px rgba(61, 220, 151, 0.4), inset 0 0 16px rgba(61, 220, 151, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  animation: pdfSuccessPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pdfSuccessPop {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pdf-download-file-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  border-radius: 12px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  margin-top: 14px;
+}
+
+.pdf-download-file-name {
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  color: #ffffff;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pdf-download-file-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #3ddc97;
+  background: rgba(61, 220, 151, 0.12);
+  border: 1px solid rgba(61, 220, 151, 0.3);
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.2px;
+}

@@ -963,6 +963,7 @@ class SimplePdf {
         if (ob_get_length()) { @ob_end_clean(); }
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Access-Control-Expose-Headers: Content-Disposition');
         header('Content-Length: ' . strlen($pdf));
         header('Cache-Control: private, max-age=0, must-revalidate');
         echo $pdf;
