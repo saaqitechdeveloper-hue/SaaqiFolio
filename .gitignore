@@ -1,14 +1,6 @@
-/assets/uploads/avatars/*
-!/assets/uploads/avatars/.gitkeep
-/assets/uploads/banners/*
-!/assets/uploads/banners/.gitkeep
-/assets/uploads/portfolio/*
-!/assets/uploads/portfolio/.gitkeep
-/assets/uploads/cv/*
-!/assets/uploads/cv/.gitkeep
-/assets/uploads/videos/*
-!/assets/uploads/videos/.gitkeep
+/assets/uploads
+/assets/uploads/*
+/assets/uploads/
 .vscode/
 .idea/
 *.log
-/assets/uploads/.htaccess
