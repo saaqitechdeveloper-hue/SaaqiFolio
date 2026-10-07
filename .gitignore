@@ -11,3 +11,4 @@
 .vscode/
 .idea/
 *.log
+/assets/uploads/.htaccess

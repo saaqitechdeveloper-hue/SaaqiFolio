@@ -95,7 +95,7 @@ $tvDesc = get_setting('tutorial_video_desc', 'Watch this quick tutorial to explo
           Your browser does not support HTML5 video tag.
         </video>
       <?php else: ?>
-        <iframe id="tutorialVideoIframe" data-src="<?php echo e($tvEmbedUrl); ?>" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>
+        <iframe id="tutorialVideoIframe" data-src="<?php echo e($tvEmbedUrl); ?>" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>
       <?php endif; ?>
     </div>
 
@@ -501,9 +501,9 @@ function openTutorialVideoModal() {
 
   const iframe = document.getElementById('tutorialVideoIframe');
   if (iframe) {
-    const src = iframe.getAttribute('data-src');
-    if (src && (!iframe.src || iframe.src === 'about:blank')) {
-      iframe.src = src;
+    const embedSrc = iframe.getAttribute('data-src');
+    if (embedSrc) {
+      iframe.src = embedSrc;
     }
   }
 
@@ -521,7 +521,9 @@ function closeTutorialVideoModal() {
   if (modal) modal.style.display = 'none';
 
   const iframe = document.getElementById('tutorialVideoIframe');
-  if (iframe) iframe.src = ''; // Stops playback immediately
+  if (iframe) {
+    iframe.src = 'about:blank';
+  }
 
   const video = document.getElementById('tutorialVideoNative');
   if (video) {
