@@ -35,6 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $existingCount == 0) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Setup - SaaqiFolio</title>
+<?php
+$ogTitle = 'Initial Setup — SaaqiFolio';
+$ogDescription = 'Initialize administrator account on SaaqiFolio.';
+include __DIR__ . '/includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">

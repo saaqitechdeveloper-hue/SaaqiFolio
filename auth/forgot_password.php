@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 if (isset($_SESSION['user_id'])) {
-    header('Location: ../dashboard/profile.php');
+    header('Location: ../dashboard/profile');
     exit;
 }
 
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
     $confirm = $_POST['confirm'];
 
     if (!$email) {
-        header('Location: forgot_password.php');
+        header('Location: forgot_password');
         exit;
     }
 
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
         mysqli_stmt_bind_param($stmt, 'ss', $hash, $email);
         mysqli_stmt_execute($stmt);
         unset($_SESSION['reset_email']);
-        header('Location: login.php?reset=1');
+        header('Location: login?reset=1');
         exit;
     }
 }
@@ -61,12 +61,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reset Password - SaaqiFolio</title>
+<?php
+$ogTitle = 'Reset Password — SaaqiFolio';
+$ogDescription = 'Recover or reset your SaaqiFolio account password safely.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js" defer></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -82,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
 
   <div class="auth-form-side">
     <div class="auth-card">
-      <a href="login.php" class="btn btn-ghost" style="width:auto;padding:8px 14px;font-size:12.5px;margin-bottom:20px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+      <a href="login" class="btn btn-ghost" style="width:auto;padding:8px 14px;font-size:12.5px;margin-bottom:20px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         <span>Back to sign in</span>
       </a>
@@ -130,5 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
   </div>
 </div>
 
+<?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

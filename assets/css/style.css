@@ -2669,6 +2669,10 @@ img {
   padding: 20px;
 }
 
+.upload-loader-overlay[hidden] {
+  display: none !important;
+}
+
 .upload-loader-box {
   background: rgba(20, 16, 36, 0.95);
   border: 1px solid rgba(139, 92, 246, 0.35);
@@ -3220,7 +3224,7 @@ img {
   letter-spacing: 0.06em;
   color: var(--accent-purple-light, #c4b5fd);
   margin-top: 0;
-  margin-bottom: 12px;
+  margin-bottom: 0px;
 }
 
 .public-content .card .thumb-wrap {

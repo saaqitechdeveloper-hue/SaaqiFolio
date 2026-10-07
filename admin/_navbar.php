@@ -43,7 +43,7 @@ $adminName = $_SESSION['admin_name'] ?? 'Super Admin';
   <div class="side-nav">
     <div class="nav-group-label">ADMINISTRATION</div>
 
-    <a href="dashboard.php" class="nav-btn <?php echo ($activeNav ?? '') === 'dashboard' ? 'active' : ''; ?>">
+    <a href="dashboard" class="nav-btn <?php echo ($activeNav ?? '') === 'dashboard' ? 'active' : ''; ?>">
       <span class="nav-icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></svg>
       </span>
@@ -51,7 +51,7 @@ $adminName = $_SESSION['admin_name'] ?? 'Super Admin';
       <?php if (($activeNav ?? '') === 'dashboard'): ?><span class="active-dot"></span><?php endif; ?>
     </a>
 
-    <a href="users.php" class="nav-btn <?php echo ($activeNav ?? '') === 'users' ? 'active' : ''; ?>">
+    <a href="users" class="nav-btn <?php echo ($activeNav ?? '') === 'users' ? 'active' : ''; ?>">
       <span class="nav-icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </span>
@@ -59,7 +59,7 @@ $adminName = $_SESSION['admin_name'] ?? 'Super Admin';
       <?php if (($activeNav ?? '') === 'users'): ?><span class="active-dot"></span><?php endif; ?>
     </a>
 
-    <a href="payments.php" class="nav-btn <?php echo ($activeNav ?? '') === 'payments' ? 'active' : ''; ?>">
+    <a href="payments" class="nav-btn <?php echo ($activeNav ?? '') === 'payments' ? 'active' : ''; ?>">
       <span class="nav-icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" x2="10"/><path d="M7 15h.01"/><path d="M11 15h2"/></svg>
       </span>
@@ -67,9 +67,17 @@ $adminName = $_SESSION['admin_name'] ?? 'Super Admin';
       <?php if (($activeNav ?? '') === 'payments'): ?><span class="active-dot"></span><?php endif; ?>
     </a>
 
+    <a href="tutorial_video" class="nav-btn <?php echo ($activeNav ?? '') === 'tutorial_video' ? 'active' : ''; ?>">
+      <span class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </span>
+      <span class="nav-text">Tutorial Video</span>
+      <?php if (($activeNav ?? '') === 'tutorial_video'): ?><span class="active-dot"></span><?php endif; ?>
+    </a>
+
     <div class="nav-group-label" style="margin-top:20px;">QUICK ACCESS</div>
 
-    <a href="../dashboard/profile.php" target="_blank" class="nav-btn live-link">
+    <a href="../dashboard/profile" target="_blank" class="nav-btn live-link">
       <span class="nav-icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
       </span>
@@ -96,7 +104,7 @@ $adminName = $_SESSION['admin_name'] ?? 'Super Admin';
         <div class="side-user-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:600;"><?php echo e($adminName); ?></div>
         <div class="side-user-sub" style="font-size:11px;color:var(--accent-purple-light);">Super Admin</div>
       </div>
-      <a href="logout.php" class="side-logout-btn" title="Sign out" style="padding:6px;border-radius:8px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;text-decoration:none;">
+      <a href="logout" class="side-logout-btn" title="Sign out" style="padding:6px;border-radius:8px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;text-decoration:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </a>
     </div>

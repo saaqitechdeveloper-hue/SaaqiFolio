@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 if (isset($_SESSION['user_id'])) {
-    header('Location: ../dashboard/profile.php');
+    header('Location: ../dashboard/profile');
     exit;
 }
 
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (mysqli_stmt_execute($stmt)) {
                 $_SESSION['user_id'] = mysqli_insert_id($conn);
-                header('Location: ../dashboard/profile.php?welcome=1');
+                header('Location: ../dashboard/profile?welcome=1');
                 exit;
             } else {
                 $error = 'Something went wrong. Please try again.';
@@ -49,12 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Create Account - SaaqiFolio</title>
+<?php
+$ogTitle = 'Create Account — SaaqiFolio';
+$ogDescription = 'Join SaaqiFolio to build your creative designer portfolio in minutes. Showcase your work and grow your brand.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js"></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -71,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="auth-form-side">
     <div class="auth-card">
       <div class="auth-tabs">
-        <a href="login.php" class="auth-tab" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">Sign in</a>
+        <a href="login" class="auth-tab" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">Sign in</a>
         <button class="auth-tab active" type="button">Create account</button>
       </div>
 
@@ -116,5 +121,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 </div>
 
+<?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

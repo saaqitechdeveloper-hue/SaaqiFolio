@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
     mysqli_stmt_bind_param($del, 'i', $id);
 
     if (mysqli_stmt_execute($del)) {
-        header('Location: users.php?deleted=1');
+        header('Location: users?deleted=1');
         exit;
     } else {
         $error = 'Something went wrong while deleting. Please try again.';
@@ -51,12 +51,17 @@ $activeNav = 'users';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Delete User - SaaqiFolio Admin</title>
+<?php
+$ogTitle = 'Delete User — SaaqiFolio Admin';
+$ogDescription = 'Confirm user deletion and data removal on SaaqiFolio.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js"></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -80,7 +85,7 @@ $activeNav = 'users';
 
       <form method="POST" style="display:flex;gap:10px;">
         <button type="submit" name="confirm_delete" class="btn btn-primary" style="background:var(--danger);">Yes, Delete Permanently</button>
-        <a href="edit_user.php?id=<?php echo $id; ?>" class="btn btn-ghost" style="text-decoration:none;text-align:center;">Cancel</a>
+        <a href="edit_user?id=<?php echo $id; ?>" class="btn btn-ghost" style="text-decoration:none;text-align:center;">Cancel</a>
       </form>
     </div>
   </div>

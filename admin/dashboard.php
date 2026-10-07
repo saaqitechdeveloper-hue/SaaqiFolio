@@ -35,12 +35,17 @@ $activeNav = 'dashboard';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard — SaaqiFolio</title>
+<?php
+$ogTitle = 'Admin Dashboard — SaaqiFolio';
+$ogDescription = 'Super Admin control panel for managing users, portfolios, and subscriptions on SaaqiFolio.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js" defer></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -59,11 +64,11 @@ $activeNav = 'dashboard';
           <div class="page-desc">Platform overview — users, subscriptions, and revenue.</div>
         </div>
         <div style="display:flex;gap:10px;">
-          <a href="users.php" class="btn btn-ghost btn-sm" style="width:auto;text-decoration:none;">
+          <a href="users" class="btn btn-ghost btn-sm" style="width:auto;text-decoration:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Manage Users
           </a>
-          <a href="payments.php" class="btn btn-ghost btn-sm" style="width:auto;text-decoration:none;">
+          <a href="payments" class="btn btn-ghost btn-sm" style="width:auto;text-decoration:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             Payments
           </a>
@@ -128,7 +133,7 @@ $activeNav = 'dashboard';
     <!-- Quick Actions -->
     <div class="section-label">Quick Actions</div>
     <div class="quick-actions" style="margin-bottom:28px;">
-      <a href="users.php" class="quick-action-card" style="text-decoration:none;">
+      <a href="users" class="quick-action-card" style="text-decoration:none;">
         <div class="qa-icon" style="background:var(--accent-soft);">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
@@ -137,7 +142,7 @@ $activeNav = 'dashboard';
           <div class="qa-desc"><?php echo $totalUsers; ?> accounts registered</div>
         </div>
       </a>
-      <a href="payments.php" class="quick-action-card" style="text-decoration:none;">
+      <a href="payments" class="quick-action-card" style="text-decoration:none;">
         <div class="qa-icon" style="background:rgba(61,220,151,0.12);">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         </div>
@@ -146,13 +151,22 @@ $activeNav = 'dashboard';
           <div class="qa-desc">Rs. <?php echo number_format($revenueAllTime); ?> earned total</div>
         </div>
       </a>
-      <a href="users.php?plan=Pro" class="quick-action-card" style="text-decoration:none;">
+      <a href="users?plan=Pro" class="quick-action-card" style="text-decoration:none;">
         <div class="qa-icon" style="background:rgba(255,107,74,0.1);">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-2)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </div>
         <div>
           <div class="qa-title">Pro Users</div>
           <div class="qa-desc"><?php echo $proUsers; ?> active subscriptions</div>
+        </div>
+      </a>
+      <a href="tutorial_video" class="quick-action-card" style="text-decoration:none;">
+        <div class="qa-icon" style="background:rgba(124,92,252,0.15);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple-light)" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+        <div>
+          <div class="qa-title">Tutorial Video</div>
+          <div class="qa-desc">Configure &amp; preview popup video</div>
         </div>
       </a>
     </div>
@@ -179,7 +193,7 @@ $activeNav = 'dashboard';
                 <?php while ($u = mysqli_fetch_assoc($recentUsers)): ?>
                   <tr>
                     <td>
-                      <a href="edit_user.php?id=<?php echo $u['id']; ?>" style="color:var(--text);text-decoration:none;font-weight:600;">
+                      <a href="edit_user?id=<?php echo $u['id']; ?>" style="color:var(--text);text-decoration:none;font-weight:600;">
                         <?php echo e($u['name']); ?>
                       </a>
                     </td>
@@ -192,7 +206,7 @@ $activeNav = 'dashboard';
           </table>
         </div>
         <div style="padding:12px 16px;border-top:1px solid var(--border);">
-          <a href="users.php" style="font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600;">View all users →</a>
+          <a href="users" style="font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600;">View all users →</a>
         </div>
       </div>
 
@@ -226,7 +240,7 @@ $activeNav = 'dashboard';
           </table>
         </div>
         <div style="padding:12px 16px;border-top:1px solid var(--border);">
-          <a href="payments.php" style="font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600;">View all payments →</a>
+          <a href="payments" style="font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600;">View all payments →</a>
         </div>
       </div>
 

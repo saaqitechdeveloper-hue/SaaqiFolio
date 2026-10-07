@@ -4,13 +4,13 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 if (isset($_SESSION['admin_id'])) {
-    header('Location: dashboard.php');
+    header('Location: dashboard');
     exit;
 }
 
 $adminCount = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS cnt FROM admins"))['cnt'];
 if ($adminCount == 0) {
-    header('Location: ../admin_setup.php');
+    header('Location: ../admin_setup');
     exit;
 }
 
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($admin && password_verify($password, $admin['password'])) {
         $_SESSION['admin_id'] = $admin['id'];
         $_SESSION['admin_name'] = $admin['full_name'];
-        header('Location: dashboard.php');
+        header('Location: dashboard');
         exit;
     } else {
         $error = 'Incorrect username or password.';
@@ -41,12 +41,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Login - SaaqiFolio</title>
+<?php
+$ogTitle = 'Super Admin Login — SaaqiFolio';
+$ogDescription = 'Secure administrative access portal for SaaqiFolio.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js"></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 <div class="auth-form-side" style="min-height:100vh;">

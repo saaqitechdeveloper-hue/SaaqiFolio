@@ -16,7 +16,7 @@ function get_user($conn, $id) {
 }
 
 $user = get_user($conn, $userId);
-if (!$user) { session_destroy(); header('Location: ../auth/login.php'); exit; }
+if (!$user) { session_destroy(); header('Location: ../auth/login'); exit; }
 
 $editing = isset($_GET['edit']);
 
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_profile'])) {
     mysqli_stmt_execute($stmt);
 
     $_SESSION['flash_success'] = 'Profile updated successfully.';
-    header('Location: profile.php');
+    header('Location: profile');
     exit;
 }
 
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_avatar'])) {
     } elseif ($filename === false) {
         $_SESSION['flash_error'] = 'Avatar upload failed. Use JPG/PNG/WEBP under 5MB.';
     }
-    header('Location: profile.php');
+    header('Location: profile');
     exit;
 }
 
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_banner'])) {
     } elseif ($filename === false) {
         $_SESSION['flash_error'] = 'Banner upload failed. Use JPG/PNG/WEBP under 5MB.';
     }
-    header('Location: profile.php');
+    header('Location: profile');
     exit;
 }
 
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_banner'])) {
     mysqli_stmt_bind_param($stmt, 'i', $userId);
     mysqli_stmt_execute($stmt);
     $_SESSION['flash_success'] = 'Banner reset successfully.';
-    header('Location: profile.php');
+    header('Location: profile');
     exit;
 }
 
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_banner_pos'])) {
     mysqli_stmt_bind_param($stmt, 'iiii', $posX, $posY, $zoom, $userId);
     mysqli_stmt_execute($stmt);
     $_SESSION['flash_success'] = 'Banner position saved.';
-    header('Location: profile.php');
+    header('Location: profile');
     exit;
 }
 
@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_cv'])) {
     } elseif ($result === false) {
         $_SESSION['flash_error'] = 'CV upload failed. Use PDF/DOC/DOCX under 8MB.';
     }
-    header('Location: ' . ($editing ? 'profile.php?edit=1' : 'profile.php'));
+    header('Location: ' . ($editing ? 'profile?edit=1' : 'profile'));
     exit;
 }
 
@@ -130,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_cv'])) {
     mysqli_stmt_bind_param($stmt, 'i', $userId);
     mysqli_stmt_execute($stmt);
     $_SESSION['flash_success'] = 'CV removed.';
-    header('Location: ' . ($editing ? 'profile.php?edit=1' : 'profile.php'));
+    header('Location: ' . ($editing ? 'profile?edit=1' : 'profile'));
     exit;
 }
 
@@ -156,12 +156,17 @@ $activeNav = 'profile';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Creator Profile - SaaqiFolio</title>
+<?php
+$ogTitle = 'Creator Profile — SaaqiFolio';
+$ogDescription = 'Manage your creative profile, bio, skills, and custom public link on SaaqiFolio.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js"></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -269,7 +274,7 @@ $activeNav = 'profile';
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
               <span>Save Changes</span>
             </button>
-            <a href="profile.php" class="btn btn-ghost" style="text-decoration:none;text-align:center;">Cancel</a>
+            <a href="profile" class="btn btn-ghost" style="text-decoration:none;text-align:center;">Cancel</a>
           </div>
         </form>
 
@@ -433,12 +438,12 @@ $activeNav = 'profile';
             </div>
 
             <div class="profile-hero-actions">
-              <a href="profile.php?edit=1" class="btn btn-ghost btn-sm" style="text-decoration:none;">
+              <a href="profile?edit=1" class="btn btn-ghost btn-sm" style="text-decoration:none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                 <span>Edit Profile</span>
               </a>
 
-              <a href="../p.php?slug=<?php echo urlencode($user['public_slug']); ?>" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;">
+              <a href="../p/<?php echo urlencode($user['public_slug']); ?>" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 <span>Live Preview</span>
               </a>
@@ -458,13 +463,13 @@ $activeNav = 'profile';
                   <span>Export Your Portfolio<?php echo $user['is_subscribed'] ? '' : ' (' . $remainingPdf . ' left)'; ?></span>
                 </button>
               <?php else: ?>
-                <a href="upgrade.php" class="btn btn-ghost btn-sm text-accent" style="text-decoration:none;">
+                <a href="upgrade" class="btn btn-ghost btn-sm text-accent" style="text-decoration:none;">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
                   <span>Export Your Portfolio (Upgrade)</span>
                 </a>
               <?php endif; ?>
 
-              <a href="portfolio.php" class="btn btn-primary btn-sm" style="width:auto;text-decoration:none;">
+              <a href="portfolio" class="btn btn-primary btn-sm" style="width:auto;text-decoration:none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></svg>
                 <span>Manage Works</span>
               </a>
@@ -604,7 +609,7 @@ $activeNav = 'profile';
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></svg>
                 <h4>Featured Highlights</h4>
               </div>
-              <a href="portfolio.php" class="view-all-link">
+              <a href="portfolio" class="view-all-link">
                 <span>View All Works</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
               </a>
@@ -666,7 +671,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 function copyShareLink(){
-  const url = window.location.origin + window.location.pathname.replace(/dashboard\/.*/, '') + 'p.php?slug=<?php echo urlencode($user['public_slug']); ?>';
+  const url = window.location.origin + window.location.pathname.replace(/dashboard\/.*/, '') + 'p/<?php echo urlencode($user['public_slug']); ?>';
   navigator.clipboard.writeText(url).then(() => {
     alert('Public portfolio link copied to clipboard:\n' + url);
   });
@@ -744,5 +749,6 @@ if ($canDownloadPdf && $imageCount > 0) {
     include __DIR__ . '/../includes/pdf_export_modal.php';
 }
 ?>
+<?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

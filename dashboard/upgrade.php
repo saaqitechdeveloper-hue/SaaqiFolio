@@ -36,12 +36,17 @@ $activeNav = 'upgrade';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Upgrade to Pro - SaaqiFolio</title>
+<?php
+$ogTitle = 'Upgrade to SaaqiFolio Pro';
+$ogDescription = 'Unlock unlimited portfolio uploads, custom branding, and instant PDF client exports.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js"></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -269,5 +274,6 @@ $activeNav = 'upgrade';
   </main>
 </div>
 
+<?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

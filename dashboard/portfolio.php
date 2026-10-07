@@ -8,7 +8,7 @@ $error = $_SESSION['flash_error'] ?? '';
 $success = $_SESSION['flash_success'] ?? '';
 unset($_SESSION['flash_error'], $_SESSION['flash_success']);
 
-$redirectTarget = "portfolio.php" . (!empty($_GET['category']) && $_GET['category'] !== 'All' ? "?category=" . urlencode($_GET['category']) : "");
+$redirectTarget = "portfolio" . (!empty($_GET['category']) && $_GET['category'] !== 'All' ? "?category=" . urlencode($_GET['category']) : "");
 
 $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE id = ?");
 mysqli_stmt_bind_param($stmt, 'i', $userId);
@@ -34,52 +34,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_images'])) {
         $limitHitNow = false;
         $remainingSlots = $user['is_subscribed'] ? PHP_INT_MAX : (FREE_IMAGE_LIMIT - $currentCount);
 
-        if (isset($_FILES['images'])) {
-            $fileCount = count($_FILES['images']['name']);
-            $savedFiles = [];
-
-            for ($i = 0; $i < $fileCount; $i++) {
-                if ($remainingSlots <= 0) {
-                    $limitHitNow = true;
-                    break;
-                }
-
-                if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) continue;
-
-                $tmpFile = [
-                    'name' => $_FILES['images']['name'][$i],
-                    'type' => $_FILES['images']['type'][$i],
-                    'tmp_name' => $_FILES['images']['tmp_name'][$i],
-                    'error' => $_FILES['images']['error'][$i],
-                    'size' => $_FILES['images']['size'][$i]
-                ];
-                $_FILES['single_image'] = $tmpFile;
-
-                $filename = handle_image_upload('single_image', __DIR__ . '/../assets/uploads/portfolio');
-                if ($filename) {
-                    $savedFiles[] = [
-                        'filename' => $filename,
-                        'path' => __DIR__ . '/../assets/uploads/portfolio/' . $filename,
-                        'original' => $_FILES['images']['name'][$i],
-                    ];
-                    $uploaded++;
-                    $remainingSlots--;
+        // Universal file extraction: safely handles single file, array of files, and multiple keys
+        $incomingFiles = [];
+        $possibleKeys = ['images', 'image', 'files', 'file', 'single_image'];
+        foreach ($possibleKeys as $key) {
+            if (isset($_FILES[$key]) && !empty($_FILES[$key]['name'])) {
+                if (is_array($_FILES[$key]['name'])) {
+                    $cnt = count($_FILES[$key]['name']);
+                    for ($i = 0; $i < $cnt; $i++) {
+                        if (empty($_FILES[$key]['name'][$i])) continue;
+                        $incomingFiles[] = [
+                            'name'     => $_FILES[$key]['name'][$i],
+                            'type'     => $_FILES[$key]['type'][$i] ?? '',
+                            'tmp_name' => $_FILES[$key]['tmp_name'][$i] ?? '',
+                            'error'    => $_FILES[$key]['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+                            'size'     => $_FILES[$key]['size'][$i] ?? 0,
+                        ];
+                    }
                 } else {
-                    $failed++;
+                    $incomingFiles[] = [
+                        'name'     => $_FILES[$key]['name'],
+                        'type'     => $_FILES[$key]['type'] ?? '',
+                        'tmp_name' => $_FILES[$key]['tmp_name'] ?? '',
+                        'error'    => $_FILES[$key]['error'] ?? UPLOAD_ERR_NO_FILE,
+                        'size'     => $_FILES[$key]['size'] ?? 0,
+                    ];
                 }
-            }
-
-            foreach ($savedFiles as $f) {
-                $category = classify_image_with_ai($f['path'], $f['original'], $categories);
-                $ins = mysqli_prepare($conn, "INSERT INTO portfolio_images (user_id, filename, category) VALUES (?,?,?)");
-                mysqli_stmt_bind_param($ins, 'iss', $userId, $f['filename'], $category);
-                mysqli_stmt_execute($ins);
             }
         }
+
+        $totalIncoming = count($incomingFiles);
+        $savedFiles = [];
+
+        foreach ($incomingFiles as $fileItem) {
+            if ($remainingSlots <= 0) {
+                $limitHitNow = true;
+                break;
+            }
+
+            if ($fileItem['error'] !== UPLOAD_ERR_OK) {
+                $failed++;
+                continue;
+            }
+
+            $_FILES['single_upload_item'] = $fileItem;
+            $filename = handle_image_upload('single_upload_item', __DIR__ . '/../assets/uploads/portfolio');
+            if ($filename) {
+                $savedFiles[] = [
+                    'filename' => $filename,
+                    'path'     => __DIR__ . '/../assets/uploads/portfolio/' . $filename,
+                    'original' => $fileItem['name'],
+                ];
+                $uploaded++;
+                $remainingSlots--;
+            } else {
+                $failed++;
+            }
+        }
+
+        foreach ($savedFiles as $f) {
+            $category = 'Other';
+            try {
+                $category = classify_image_with_ai($f['path'], $f['original'], $categories);
+            } catch (Throwable $e) {
+                error_log("classify_image_with_ai error: " . $e->getMessage());
+                $category = 'Other';
+            }
+            if (empty($category) || !in_array($category, $categories, true)) {
+                $category = 'Other';
+            }
+            $ins = mysqli_prepare($conn, "INSERT INTO portfolio_images (user_id, filename, category) VALUES (?,?,?)");
+            mysqli_stmt_bind_param($ins, 'iss', $userId, $f['filename'], $category);
+            mysqli_stmt_execute($ins);
+        }
+
         if ($uploaded) $success = "$uploaded image(s) uploaded successfully.";
-        if ($failed) $error = ($error ? $error . ' ' : '') . "$failed file(s) failed (only JPG/PNG/WEBP under 5MB allowed).";
+        if ($failed) $error = ($error ? $error . ' ' : '') . "$failed file(s) failed (files must be valid images under 30MB).";
         if ($limitHitNow) {
-            $success = ($success ? $success . ' ' : '') . "You've now reached the free plan limit of " . FREE_IMAGE_LIMIT . " images" . ($failed || ($fileCount ?? 0) > $uploaded ? ' — the rest of this batch was not uploaded.' : '.');
+            $success = ($success ? $success . ' ' : '') . "You've now reached the free plan limit of " . FREE_IMAGE_LIMIT . " images" . ($failed || $totalIncoming > $uploaded ? ' — the rest of this batch was not uploaded.' : '.');
         }
     }
 
@@ -233,12 +265,17 @@ $activeNav = 'portfolio';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portfolio Works - SaaqiFolio</title>
+<?php
+$ogTitle = 'Portfolio Works — SaaqiFolio';
+$ogDescription = 'Upload and organize your design works into smart categories with AI assistance on SaaqiFolio.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js"></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -272,7 +309,7 @@ $activeNav = 'portfolio';
               <div class="pro-banner-desc">You've reached the free tier limit of <?php echo FREE_IMAGE_LIMIT; ?> images. Upgrade to Pro for unlimited uploads &amp; high-res PDF generation.</div>
             </div>
           </div>
-          <a href="upgrade.php" class="btn btn-primary" style="width:auto;flex-shrink:0;">
+          <a href="upgrade" class="btn btn-primary" style="width:auto;flex-shrink:0;">
             <span>Upgrade to Pro</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="9 18 15 12 9 6"/></svg>
           </a>
@@ -294,18 +331,18 @@ $activeNav = 'portfolio';
           <div class="dz-title">Build your creative showcase</div>
           <div class="dz-sub">Drag &amp; drop design files here, or browse from your computer. Our smart engine will organize them into Logo, UI/UX, Banner, Flyer, and more.</div>
           
-          <form method="POST" enctype="multipart/form-data" id="uploadFormMain">
+          <form method="POST" action="portfolio" enctype="multipart/form-data" id="uploadFormMain">
             <input type="hidden" name="upload_images" value="1">
             <input type="hidden" name="ajax" value="1">
-            <input type="file" id="fileInputMain" name="images[]" multiple accept="image/*" hidden>
+            <input type="file" id="fileInputMain" name="images[]" multiple accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.jfif,.avif,.svg,.bmp,.ico" hidden>
             <div class="dz-browse-row">
-              <button type="button" class="btn btn-primary" data-browse-btn style="width:auto;padding:12px 26px;">
+              <button type="button" class="btn btn-primary" data-browse-btn onclick="event.preventDefault(); document.getElementById('fileInputMain').click();" style="width:auto;padding:12px 26px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span>Browse Files</span>
               </button>
               <span class="dz-or">or drag &amp; drop anywhere here</span>
             </div>
-            <div class="dz-file-types">Supports JPG, PNG, WEBP (Max 5MB each)</div>
+            <div class="dz-file-types">Supports JPG, PNG, WEBP, GIF, SVG, JFIF, AVIF (Max 30MB each)</div>
           </form>
         </div>
 
@@ -323,12 +360,12 @@ $activeNav = 'portfolio';
           
           <div class="portfolio-head-actions">
             <?php if (!$atLimit): ?>
-              <form method="POST" enctype="multipart/form-data" id="uploadFormAdd" style="display:inline;">
+              <form method="POST" action="portfolio" enctype="multipart/form-data" id="uploadFormAdd" style="display:inline;">
                 <input type="hidden" name="upload_images" value="1">
                 <input type="hidden" name="ajax" value="1">
-                <input type="file" id="fileInputAdd" name="images[]" multiple accept="image/*" hidden>
+                <input type="file" id="fileInputAdd" name="images[]" multiple accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.jfif,.avif,.svg,.bmp,.ico" hidden>
                 <div class="mini-dropzone" id="dropzoneAdd">
-                  <button type="button" data-browse-btn class="btn btn-primary btn-sm">
+                  <button type="button" data-browse-btn onclick="event.preventDefault(); document.getElementById('fileInputAdd').click();" class="btn btn-primary btn-sm">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     <span>Add Images</span>
                   </button>
@@ -336,7 +373,7 @@ $activeNav = 'portfolio';
                 </div>
               </form>
             <?php else: ?>
-              <a href="upgrade.php" class="btn btn-primary btn-sm" style="width:auto;text-decoration:none;">
+              <a href="upgrade" class="btn btn-primary btn-sm" style="width:auto;text-decoration:none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
                 <span>Upgrade for Unlimited</span>
               </a>
@@ -347,7 +384,7 @@ $activeNav = 'portfolio';
                 <span>Export Your Portfolio<?php echo $remPdf; ?></span>
               </button>
             <?php else: ?>
-              <a href="upgrade.php" class="btn btn-ghost btn-sm text-accent" style="width:auto;text-decoration:none;">
+              <a href="upgrade" class="btn btn-ghost btn-sm text-accent" style="width:auto;text-decoration:none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
                 <span>Export Your Portfolio (Upgrade)</span>
               </a>
@@ -575,7 +612,7 @@ document.addEventListener('change', (e) => {
 });
 
 // Dropzone wiring
-(function () {
+function initPortfolioDropzones() {
   const loaderEls = {
     overlay: document.getElementById('uploadLoader'),
     timerEl: document.getElementById('uploadTimer'),
@@ -586,14 +623,18 @@ document.addEventListener('change', (e) => {
   const mainInput = document.getElementById('fileInputMain');
   const mainForm = document.getElementById('uploadFormMain');
   if (mainZone && mainInput && mainForm) {
-    wireDropzone(mainZone, mainInput, files => ajaxUploadFiles(mainForm, mainInput, files, loaderEls));
+    if (typeof wireDropzone === 'function') {
+      wireDropzone(mainZone, mainInput, files => ajaxUploadFiles(mainForm, mainInput, files, loaderEls));
+    }
   }
 
   const addZone = document.getElementById('dropzoneAdd');
   const addInput = document.getElementById('fileInputAdd');
   const addForm = document.getElementById('uploadFormAdd');
   if (addZone && addInput && addForm) {
-    wireDropzone(addZone, addInput, files => ajaxUploadFiles(addForm, addInput, files, loaderEls));
+    if (typeof wireDropzone === 'function') {
+      wireDropzone(addZone, addInput, files => ajaxUploadFiles(addForm, addInput, files, loaderEls));
+    }
   }
 
   // Global Page-Wide Drag & Drop
@@ -601,9 +642,17 @@ document.addEventListener('change', (e) => {
   const activeForm = addForm || mainForm;
   const activeInput = addInput || mainInput;
   if (pageDropOverlay && activeForm && activeInput) {
-    initGlobalPageDrop(pageDropOverlay, activeForm, activeInput, loaderEls);
+    if (typeof initGlobalPageDrop === 'function') {
+      initGlobalPageDrop(pageDropOverlay, activeForm, activeInput, loaderEls);
+    }
   }
-})();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPortfolioDropzones);
+} else {
+  initPortfolioDropzones();
+}
 
 // Sortable Category Grids
 function initSortableGrids() {
@@ -690,7 +739,7 @@ function saveCategoryOrder(grid) {
   formData.append('category', category);
   order.forEach(id => formData.append('order[]', id));
 
-  fetch('portfolio.php', {
+  fetch('portfolio', {
     method: 'POST',
     body: formData
   })
@@ -719,7 +768,7 @@ initSortableGrids();
 </script>
 <?php
 if (!empty($canExportPdf) && !empty($allImages)) {
-    $pdfModalBaseUrl = 'download_pdf.php';
+    $pdfModalBaseUrl = 'download_pdf';
     $pdfTotalImages = count($allImages);
     $pdfCategoriesCount = [];
     foreach ($allImages as $img) {
@@ -729,5 +778,6 @@ if (!empty($canExportPdf) && !empty($allImages)) {
     include __DIR__ . '/../includes/pdf_export_modal.php';
 }
 ?>
+<?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

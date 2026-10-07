@@ -25,12 +25,17 @@ $activeNav = 'payments';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Payments - SaaqiFolio Admin</title>
+<?php
+$ogTitle = 'Payments & Revenue — SaaqiFolio Admin';
+$ogDescription = 'View and audit payment transactions and Pro subscriptions on SaaqiFolio.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js"></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -91,7 +96,7 @@ $activeNav = 'payments';
               <tr>
                 <td style="color:var(--text-muted);"><?php echo date('d M Y, h:i A', strtotime($p['created_at'])); ?></td>
                 <td>
-                  <a href="edit_user.php?id=<?php echo $p['user_id']; ?>" style="color:var(--text);text-decoration:none;font-weight:600;"><?php echo e($p['user_name']); ?></a>
+                  <a href="edit_user?id=<?php echo $p['user_id']; ?>" style="color:var(--text);text-decoration:none;font-weight:600;"><?php echo e($p['user_name']); ?></a>
                   <div style="color:var(--text-faint);font-size:11.5px;"><?php echo e($p['user_email']); ?></div>
                 </td>
                 <td><?php echo e($p['gateway']); ?></td>

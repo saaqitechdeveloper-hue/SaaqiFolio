@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_delete'])) {
         $in = implode(',', $ids);
         mysqli_query($conn, "DELETE FROM users WHERE id IN ($in)");
     }
-    header('Location: users.php?deleted_bulk=1');
+    header('Location: users?deleted_bulk=1');
     exit;
 }
 
@@ -48,12 +48,17 @@ $activeNav = 'users';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Users — SaaqiFolio Admin</title>
+<?php
+$ogTitle = 'Manage Users — SaaqiFolio Admin';
+$ogDescription = 'Manage users, portfolios, and subscriptions on SaaqiFolio.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js" defer></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -161,7 +166,7 @@ $activeNav = 'users';
                            style="accent-color:var(--accent);width:16px;height:16px;">
                   </td>
                   <td>
-                    <a href="edit_user.php?id=<?php echo $u['id']; ?>" style="color:var(--text);text-decoration:none;font-weight:600;">
+                    <a href="edit_user?id=<?php echo $u['id']; ?>" style="color:var(--text);text-decoration:none;font-weight:600;">
                       <?php echo e($u['name']); ?>
                     </a>
                   </td>
@@ -172,10 +177,10 @@ $activeNav = 'users';
                   <td style="color:var(--text-faint);font-size:12.5px;"><?php echo date('d M Y', strtotime($u['created_at'])); ?></td>
                   <td style="text-align:right;white-space:nowrap;">
                     <div style="display:inline-flex;gap:6px;align-items:center;justify-content:flex-end;">
-                      <a href="edit_user.php?id=<?php echo $u['id']; ?>" class="icon-btn" title="Edit user">
+                      <a href="edit_user?id=<?php echo $u['id']; ?>" class="icon-btn" title="Edit user">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </a>
-                      <a href="delete_user.php?id=<?php echo $u['id']; ?>" class="icon-btn danger" title="Delete user"
+                      <a href="delete_user?id=<?php echo $u['id']; ?>" class="icon-btn danger" title="Delete user"
                          onclick="event.preventDefault();confirmAction('Delete <?php echo e(addslashes($u['name'])); ?>?',()=>window.location.href=this.href,{confirmLabel:'Delete'})">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                       </a>

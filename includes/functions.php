@@ -45,24 +45,43 @@ function initials($name) {
 }
 
 // Generic image upload handler. Returns filename on success, false on failure, null if no file given.
-function handle_image_upload($fileInput, $destDir, $maxMB = 5) {
+function handle_image_upload($fileInput, $destDir, $maxMB = 30) {
     if (!isset($_FILES[$fileInput]) || $_FILES[$fileInput]['error'] === UPLOAD_ERR_NO_FILE) {
         return null;
     }
     if ($_FILES[$fileInput]['error'] !== UPLOAD_ERR_OK) {
         return false;
     }
-    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-    $ext = strtolower(pathinfo($_FILES[$fileInput]['name'], PATHINFO_EXTENSION));
-    if (!in_array($ext, $allowed)) {
+    if (!is_dir($destDir)) {
+        @mkdir($destDir, 0777, true);
+    }
+    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jfif', 'avif', 'svg', 'bmp', 'ico', 'tiff', 'tif', 'heic', 'heif'];
+    $rawName = $_FILES[$fileInput]['name'] ?? '';
+    $ext = strtolower(pathinfo($rawName, PATHINFO_EXTENSION));
+
+    if (empty($ext) || !in_array($ext, $allowed, true)) {
+        // Fallback: detect from MIME type or file content
+        $mime = '';
+        if (function_exists('mime_content_type') && !empty($_FILES[$fileInput]['tmp_name']) && file_exists($_FILES[$fileInput]['tmp_name'])) {
+            $mime = strtolower(@mime_content_type($_FILES[$fileInput]['tmp_name']) ?: '');
+        }
+        if (str_starts_with($mime, 'image/')) {
+            $sub = explode('/', $mime)[1] ?? 'jpg';
+            $ext = ($sub === 'jpeg') ? 'jpg' : (($sub === 'svg+xml') ? 'svg' : $sub);
+        } else {
+            $ext = 'jpg'; // Safe default for valid uploads
+        }
+    }
+
+    if (($_FILES[$fileInput]['size'] ?? 0) > $maxMB * 1024 * 1024) {
         return false;
     }
-    if ($_FILES[$fileInput]['size'] > $maxMB * 1024 * 1024) {
-        return false;
-    }
+
     $newName = 'img_' . str_replace('.', '', uniqid('', true)) . '.' . $ext;
     $destination = rtrim($destDir, '/') . '/' . $newName;
-    if (move_uploaded_file($_FILES[$fileInput]['tmp_name'], $destination)) {
+
+    $tmpPath = $_FILES[$fileInput]['tmp_name'];
+    if (@move_uploaded_file($tmpPath, $destination) || @copy($tmpPath, $destination)) {
         return $newName;
     }
     return false;
@@ -89,6 +108,64 @@ function handle_cv_upload($fileInput, $destDir, $maxMB = 8) {
     if (move_uploaded_file($_FILES[$fileInput]['tmp_name'], $destination)) {
         return [$newName, $_FILES[$fileInput]['name']];
     }
+    return false;
+}
+
+// Tutorial video upload handler (mp4/webm/mov/ogg/m4v). Returns [storedName, originalName] or false/null.
+// Optional $errorMessage reference to capture exact failure reason.
+function handle_video_upload($fileInput, $destDir, $maxMB = 100, &$errorMessage = '') {
+    if (!isset($_FILES[$fileInput]) || $_FILES[$fileInput]['error'] === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    $errCode = $_FILES[$fileInput]['error'];
+    if ($errCode !== UPLOAD_ERR_OK) {
+        if ($errCode === UPLOAD_ERR_INI_SIZE || $errCode === UPLOAD_ERR_FORM_SIZE) {
+            $iniMax = ini_get('upload_max_filesize');
+            $errorMessage = "Video file exceeds server upload size limit ({$iniMax}). Please upload a smaller video or contact support.";
+        } else {
+            $errorMessage = "Upload failed with PHP error code {$errCode}.";
+        }
+        return false;
+    }
+
+    $allowed = ['mp4', 'webm', 'mov', 'ogg', 'm4v'];
+    $rawName = $_FILES[$fileInput]['name'] ?? '';
+    $ext = strtolower(pathinfo($rawName, PATHINFO_EXTENSION));
+
+    if (empty($ext) || !in_array($ext, $allowed, true)) {
+        // MIME-based detection fallback
+        $mime = '';
+        if (function_exists('mime_content_type') && !empty($_FILES[$fileInput]['tmp_name']) && file_exists($_FILES[$fileInput]['tmp_name'])) {
+            $mime = strtolower(@mime_content_type($_FILES[$fileInput]['tmp_name']) ?: '');
+        }
+        if (str_starts_with($mime, 'video/')) {
+            $sub = explode('/', $mime)[1] ?? 'mp4';
+            $ext = ($sub === 'quicktime') ? 'mov' : (($sub === 'x-matroska') ? 'mkv' : $sub);
+        } else {
+            $errorMessage = 'Invalid video file format. Supported formats: MP4, WebM, MOV, OGG.';
+            return false;
+        }
+    }
+
+    if (($_FILES[$fileInput]['size'] ?? 0) > $maxMB * 1024 * 1024) {
+        $errorMessage = "Video file size exceeds maximum limit of {$maxMB}MB.";
+        return false;
+    }
+
+    if (!is_dir($destDir)) {
+        @mkdir($destDir, 0777, true);
+    }
+
+    $newName = 'tut_' . str_replace('.', '', uniqid('', true)) . '.' . $ext;
+    $destination = rtrim($destDir, '/') . '/' . $newName;
+    $tmpPath = $_FILES[$fileInput]['tmp_name'];
+
+    if (@move_uploaded_file($tmpPath, $destination) || @copy($tmpPath, $destination)) {
+        return [$newName, $rawName];
+    }
+
+    $errorMessage = 'Server could not save uploaded video file into storage directory.';
     return false;
 }
 
@@ -484,3 +561,68 @@ function easypaisa_build_fields($txnRef, $amountPkr) {
 
     return $fields;
 }
+
+// ============================================
+// Site Settings Helpers & Video Embed Parser
+// ============================================
+function get_setting($key, $default = '') {
+    global $conn;
+    static $settingsCache = [];
+    if (isset($settingsCache[$key])) return $settingsCache[$key];
+    if (!$conn) return $default;
+    $stmt = mysqli_prepare($conn, "SELECT setting_value FROM site_settings WHERE setting_key = ?");
+    if (!$stmt) return $default;
+    mysqli_stmt_bind_param($stmt, 's', $key);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($row = mysqli_fetch_assoc($res)) {
+        $settingsCache[$key] = $row['setting_value'];
+        return $row['setting_value'];
+    }
+    $settingsCache[$key] = $default;
+    return $default;
+}
+
+function set_setting($key, $value) {
+    global $conn;
+    if (!$conn) return false;
+    $stmt = mysqli_prepare($conn, "INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+    if (!$stmt) return false;
+    mysqli_stmt_bind_param($stmt, 'sss', $key, $value, $value);
+    return mysqli_stmt_execute($stmt);
+}
+
+function format_embed_video_url($url) {
+    $url = trim($url ?? '');
+    if ($url === '') return '';
+
+    // YouTube: youtu.be/ID or youtube.com/watch?v=ID or /embed/ID or /shorts/ID or /v/ID
+    if (preg_match('/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/', $url, $m)) {
+        return 'https://www.youtube-nocookie.com/embed/' . $m[1] . '?autoplay=1&rel=0&modestbranding=1';
+    }
+
+    // Vimeo: vimeo.com/ID or player.vimeo.com/video/ID
+    if (preg_match('/vimeo\.com\/(?:video\/)?([0-9]+)/', $url, $m)) {
+        return 'https://player.vimeo.com/video/' . $m[1] . '?autoplay=1';
+    }
+
+    return $url;
+}
+
+// Global cache buster query string generator: style.css?v=1791325...
+function asset_v($relativePath) {
+    $clean = ltrim($relativePath, '/');
+    $full = __DIR__ . '/../' . $clean;
+    $v = file_exists($full) ? filemtime($full) : 1;
+    return $relativePath . '?v=' . $v;
+}
+
+// Returns the web base URL path for the site (e.g. '/folivo' on local XAMPP, or '' on live root domain)
+function get_site_root_url() {
+    $script = $_SERVER['SCRIPT_NAME'] ?? '';
+    $scriptDir = str_replace('\\', '/', dirname($script));
+    $base = preg_replace('#/(auth|dashboard|admin|includes|database)$#', '', $scriptDir);
+    return rtrim($base, '/');
+}
+
+

@@ -86,12 +86,17 @@ $activeNav = 'users';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Edit <?php echo e($user['name']); ?> - SaaqiFolio Admin</title>
+<?php
+$ogTitle = 'Edit User — SaaqiFolio Admin';
+$ogDescription = 'Manage user profile details and subscription settings on SaaqiFolio.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js"></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -99,7 +104,7 @@ $activeNav = 'users';
   <?php include __DIR__ . '/_navbar.php'; ?>
 
   <div class="admin-main">
-    <a href="users.php" style="color:var(--text-muted);text-decoration:none;font-size:13px;">← Back to all users</a>
+    <a href="users" style="color:var(--text-muted);text-decoration:none;font-size:13px;">← Back to all users</a>
 
     <div class="page-head" style="margin-top:14px;">
       <div class="page-title"><?php echo e($user['name']); ?></div>
@@ -140,7 +145,7 @@ $activeNav = 'users';
           <span>Reset PDF Count</span>
         </button>
       </form>
-      <a href="delete_user.php?id=<?php echo $id; ?>" class="btn btn-danger-ghost" style="width:auto;padding:10px 18px;text-decoration:none;">
+      <a href="delete_user?id=<?php echo $id; ?>" class="btn btn-danger-ghost" style="width:auto;padding:10px 18px;text-decoration:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         <span>Delete User</span>
       </a>

@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($user && password_verify($password, $user['password'])) {
         $_SESSION['user_id'] = $user['id'];
-        header('Location: ../dashboard/profile.php');
+        header('Location: ../dashboard/profile');
         exit;
     } else {
         $error = 'Incorrect email or password.';
@@ -34,12 +34,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign In - SaaqiFolio</title>
+<?php
+$ogTitle = 'Sign In — SaaqiFolio';
+$ogDescription = 'Sign in to SaaqiFolio to manage your portfolio, organize creative categories, and export client PDFs.';
+include __DIR__ . '/../includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<script src="../assets/js/ui.js" defer></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -57,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="auth-card">
       <div class="auth-tabs">
         <button class="auth-tab active" type="button">Sign in</button>
-        <a href="signup.php" class="auth-tab" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">Create account</a>
+        <a href="signup" class="auth-tab" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">Create account</a>
       </div>
 
       <?php if ($error): ?><div class="auth-error"><?php echo e($error); ?></div><?php endif; ?>
@@ -80,11 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button class="btn btn-primary" type="submit">Sign in</button>
       </form>
       <div style="text-align:center;margin-top:14px;">
-        <a href="forgot_password.php" class="upgrade-link" style="margin:0;display:inline;text-decoration:none;">Forgot password?</a>
+        <a href="forgot_password" class="upgrade-link" style="margin:0;display:inline;text-decoration:none;">Forgot password?</a>
       </div>
     </div>
   </div>
 </div>
 
+<?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

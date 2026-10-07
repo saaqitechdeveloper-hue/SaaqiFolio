@@ -5,6 +5,13 @@ require_once __DIR__ . '/includes/functions.php';
 
 $slug = clean($conn, $_GET['slug'] ?? '');
 
+// Canonical redirect from old p.php?slug=xxx or p?slug=xxx to clean /p/xxx
+if (!empty($slug) && (strpos($_SERVER['REQUEST_URI'] ?? '', 'slug=') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'p.php') !== false)) {
+    $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+    header("Location: " . ($base ? $base : '') . "/p/" . urlencode($slug), true, 301);
+    exit;
+}
+
 // If slug is empty and user is logged in, redirect to user's portfolio
 if (empty($slug) && isset($_SESSION['user_id'])) {
     $uStmt = mysqli_prepare($conn, "SELECT public_slug FROM users WHERE id = ?");
@@ -13,7 +20,7 @@ if (empty($slug) && isset($_SESSION['user_id'])) {
     mysqli_stmt_execute($uStmt);
     $uRes = mysqli_stmt_get_result($uStmt)->fetch_assoc();
     if (!empty($uRes['public_slug'])) {
-        header("Location: p.php?slug=" . urlencode($uRes['public_slug']));
+        header("Location: p/" . urlencode($uRes['public_slug']));
         exit;
     }
 }
@@ -44,11 +51,23 @@ if ($user) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?php echo $user ? e($user['name']) . ' — Portfolio' : 'Portfolio Not Found'; ?> | SaaqiFolio</title>
+<?php
+if ($user) {
+    $ogTitle = $user['name'] . ' — ' . ($user['profession'] ?: 'Creative Portfolio') . ' | SaaqiFolio';
+    if (!empty($user['bio'])) {
+        $cleanBio = trim(strip_tags($user['bio']));
+        $ogDescription = mb_substr($cleanBio, 0, 160) . (mb_strlen($cleanBio) > 160 ? '...' : '');
+    } else {
+        $ogDescription = 'Explore ' . $user['name'] . '\'s creative portfolio, design projects, and curated works on SaaqiFolio.';
+    }
+}
+include __DIR__ . '/includes/og_meta.php';
+?>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="alternate icon" type="image/png" href="assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/assets/css/style.css'); ?>">
 <script src="assets/js/ui.js" defer></script>
 </head>
 <body>
@@ -68,7 +87,7 @@ if ($user) {
         </div>
       </div>
       <div>
-        <a href="auth/signup.php" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
+        <a href="auth/signup" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           <span>Get Started</span>
         </a>
@@ -81,7 +100,7 @@ if ($user) {
       </div>
       <h2 style="font-family:var(--font-display);margin:0 0 10px;font-size:24px;font-weight:700;">Portfolio Not Found</h2>
       <p class="muted" style="margin:0 0 28px;font-size:15px;line-height:1.6;">This portfolio link does not exist or has been removed.</p>
-      <a href="auth/signup.php" class="btn btn-primary" style="width:auto;display:inline-flex;padding:12px 28px;text-decoration:none;">
+      <a href="auth/signup" class="btn btn-primary" style="width:auto;display:inline-flex;padding:12px 28px;text-decoration:none;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         <span>Create Your Portfolio</span>
       </a>
@@ -115,12 +134,12 @@ if ($user) {
           </button>
         <?php endif; ?>
         <?php if ($isOwner): ?>
-          <a href="dashboard/profile.php" class="btn btn-ghost" style="width:auto;padding:8px 16px;font-size:13px;text-decoration:none;">
+          <a href="dashboard/profile" class="btn btn-ghost" style="width:auto;padding:8px 16px;font-size:13px;text-decoration:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             <span>Edit Profile</span>
           </a>
         <?php else: ?>
-          <a href="auth/signup.php" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
+          <a href="auth/signup" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             <span>Build Your Portfolio</span>
           </a>
@@ -193,10 +212,10 @@ if ($user) {
             <span>Contact</span>
           </a>
           <?php if (!empty($allImages)): ?>
-            <a class="btn-pdf" href="portfolio_pdf.php?slug=<?php echo urlencode($slug); ?>">
+            <button type="button" class="btn-pdf" onclick="openPdfExportModal()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
               <span>Export Your Portfolio</span>
-            </a>
+            </button>
           <?php endif; ?>
         </div>
       </div>
@@ -297,10 +316,10 @@ if ($user) {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
           <h4 style="margin:0;font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text);text-transform:none;letter-spacing:normal;">Portfolio</h4>
           <?php if (!empty($allImages)): ?>
-            <a class="btn-pdf" href="portfolio_pdf.php?slug=<?php echo urlencode($slug); ?>">
+            <button type="button" class="btn-pdf" onclick="openPdfExportModal()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
               <span>Export Your Portfolio</span>
-            </a>
+            </button>
           <?php endif; ?>
         </div>
         <?php
@@ -345,7 +364,7 @@ if ($user) {
 
 <?php
 if ($user && !empty($allImages)) {
-    $pdfModalBaseUrl = 'portfolio_pdf.php?slug=' . urlencode($slug);
+    $pdfModalBaseUrl = 'portfolio_pdf?slug=' . urlencode($slug);
     $pdfTotalImages = count($allImages);
     $pdfCategoriesCount = [];
     foreach ($allImages as $img) {
@@ -355,5 +374,6 @@ if ($user && !empty($allImages)) {
     include __DIR__ . '/includes/pdf_export_modal.php';
 }
 ?>
+<?php include __DIR__ . '/includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

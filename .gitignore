@@ -6,6 +6,8 @@
 !/assets/uploads/portfolio/.gitkeep
 /assets/uploads/cv/*
 !/assets/uploads/cv/.gitkeep
+/assets/uploads/videos/*
+!/assets/uploads/videos/.gitkeep
 .vscode/
 .idea/
 *.log

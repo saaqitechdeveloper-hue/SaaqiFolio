@@ -115,6 +115,7 @@ function wireDropzone(zoneEl, inputEl, onFiles) {
   const browseBtn = zoneEl.querySelector('[data-browse-btn]');
   if (browseBtn) {
     browseBtn.addEventListener('click', function (e) {
+      e.preventDefault();
       e.stopPropagation();
       inputEl.click();
     });
@@ -157,7 +158,11 @@ function wireDropzone(zoneEl, inputEl, onFiles) {
   });
 
   inputEl.addEventListener('change', function () {
-    if (inputEl.files && inputEl.files.length) onFiles(inputEl.files);
+    if (inputEl.files && inputEl.files.length) {
+      const filesCopy = Array.from(inputEl.files);
+      onFiles(filesCopy);
+      inputEl.value = '';
+    }
   });
 }
 
@@ -174,10 +179,14 @@ function wireDropzone(zoneEl, inputEl, onFiles) {
 function ajaxUploadFiles(form, fileInput, files, loaderEls) {
   if (!files || !files.length) return;
 
-  const dt = new DataTransfer();
-  Array.from(files).forEach(f => dt.items.add(f));
-  if (fileInput) {
-    fileInput.files = dt.files;
+  try {
+    const dt = new DataTransfer();
+    Array.from(files).forEach(f => dt.items.add(f));
+    if (fileInput) {
+      fileInput.files = dt.files;
+    }
+  } catch (e) {
+    // Graceful fallback if DataTransfer assignment is restricted
   }
 
   const fd = new FormData(form || undefined);
@@ -210,7 +219,10 @@ function ajaxUploadFiles(form, fileInput, files, loaderEls) {
     if (titleEl) titleEl.textContent = messages[msgIndex];
   }, 1000);
 
-  const targetUrl = (form && form.getAttribute('action')) ? form.getAttribute('action') : window.location.href;
+  let targetUrl = (form && form.getAttribute('action')) ? form.getAttribute('action') : '';
+  if (!targetUrl || targetUrl === '#') {
+    targetUrl = window.location.pathname + window.location.search;
+  }
 
   fetch(targetUrl, { method: 'POST', body: fd })
     .then(async r => {
@@ -230,7 +242,8 @@ function ajaxUploadFiles(form, fileInput, files, loaderEls) {
         showToast(data.error, 'danger');
         return;
       }
-      window.location.reload();
+      // Redirect to All category view so new image is immediately visible regardless of previous filter
+      window.location.href = 'portfolio?category=All';
     })
     .catch(function (err) {
       clearInterval(tick);
