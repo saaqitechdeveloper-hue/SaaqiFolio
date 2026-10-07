@@ -23,8 +23,9 @@ CREATE TABLE users (
     skills TEXT DEFAULT NULL,                 -- comma-separated list, e.g. "Figma,Photoshop"
     avatar VARCHAR(255) DEFAULT NULL,
     banner VARCHAR(255) DEFAULT NULL,
-    banner_pos_y INT DEFAULT 50,               -- 0-100
-    banner_zoom INT DEFAULT 100,               -- 100-180
+    banner_pos_x INT DEFAULT 50,                -- 0-100 (horizontal banner focal point)
+    banner_pos_y INT DEFAULT 50,                -- 0-100 (vertical banner focal point)
+    banner_zoom INT DEFAULT 100,                -- 100-180
     cv_file VARCHAR(255) DEFAULT NULL,          -- stored filename on disk
     cv_original_name VARCHAR(255) DEFAULT NULL, -- original filename for download
     public_slug VARCHAR(160) NOT NULL UNIQUE,
@@ -43,6 +44,7 @@ CREATE TABLE portfolio_images (
     user_id INT NOT NULL,
     filename VARCHAR(255) NOT NULL,
     category ENUM('Logo','Banner','UI/UX','Color Separation','Flyer','Poster','Social Media','Other') DEFAULT 'Other',
+    sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_category (user_id, category)
@@ -99,21 +101,43 @@ CREATE TABLE admins (
 ) ENGINE=InnoDB;
 
 -- ============================================
+-- Table: site_settings
+-- System-wide dynamic settings (Tutorial video, etc.)
+-- ============================================
+CREATE TABLE site_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(100) UNIQUE NOT NULL,
+    setting_value TEXT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Default settings seed
+INSERT INTO site_settings (setting_key, setting_value) VALUES
+('tutorial_video_enabled', '1'),
+('tutorial_video_type', 'url'),
+('tutorial_video_url', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+('tutorial_video_file', ''),
+('tutorial_video_title', 'SaaqiFolio Tutorial Walkthrough'),
+('tutorial_video_desc', 'Watch this quick guide to learn how to create your portfolio, organize categories, and export client PDFs.')
+ON DUPLICATE KEY UPDATE setting_key=setting_key;
+
+-- ============================================
 -- MIGRATION NOTES for existing installs (already have data):
 --
--- 1) Admin panel — run this to add the admins table:
---    CREATE TABLE admins (
+-- 1) Admin panel & site settings:
+--    CREATE TABLE IF NOT EXISTS site_settings (
 --        id INT AUTO_INCREMENT PRIMARY KEY,
---        username VARCHAR(50) NOT NULL UNIQUE,
---        password VARCHAR(255) NOT NULL,
---        full_name VARCHAR(100) NOT NULL,
---        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+--        setting_key VARCHAR(100) UNIQUE NOT NULL,
+--        setting_value TEXT NULL,
+--        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 --    ) ENGINE=InnoDB;
---    Then visit /admin_setup.php once to create your admin login.
 --
--- 2) "Website" category renamed to "Color Separation" — run this to
---    update both the column definition and any existing rows:
+-- 2) "Website" category renamed to "Color Separation":
 --    ALTER TABLE portfolio_images
 --      MODIFY category ENUM('Logo','Banner','UI/UX','Color Separation','Flyer','Poster','Social Media','Other') DEFAULT 'Other';
 --    UPDATE portfolio_images SET category = 'Color Separation' WHERE category = 'Website';
+--
+-- 3) Sort order and banner positioning:
+--    ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_pos_x INT DEFAULT 50;
+--    ALTER TABLE portfolio_images ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
 -- ============================================
