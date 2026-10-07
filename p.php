@@ -62,13 +62,14 @@ if ($user) {
     }
 }
 include __DIR__ . '/includes/og_meta.php';
+$assetBase = get_site_root_url();
 ?>
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-<link rel="alternate icon" type="image/png" href="assets/favicon.png">
+<link rel="icon" type="image/svg+xml" href="<?php echo $assetBase; ?>/assets/favicon.svg">
+<link rel="alternate icon" type="image/png" href="<?php echo $assetBase; ?>/assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/assets/css/style.css'); ?>">
-<script src="assets/js/ui.js" defer></script>
+<link rel="stylesheet" href="<?php echo $assetBase; ?>/assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/assets/css/style.css'); ?>">
+<script src="<?php echo $assetBase; ?>/assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/assets/js/ui.js'); ?>" defer></script>
 </head>
 <body>
 
@@ -87,7 +88,7 @@ include __DIR__ . '/includes/og_meta.php';
         </div>
       </div>
       <div>
-        <a href="auth/signup" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
+        <a href="<?php echo $assetBase; ?>/auth/signup" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           <span>Get Started</span>
         </a>
@@ -100,7 +101,7 @@ include __DIR__ . '/includes/og_meta.php';
       </div>
       <h2 style="font-family:var(--font-display);margin:0 0 10px;font-size:24px;font-weight:700;">Portfolio Not Found</h2>
       <p class="muted" style="margin:0 0 28px;font-size:15px;line-height:1.6;">This portfolio link does not exist or has been removed.</p>
-      <a href="auth/signup" class="btn btn-primary" style="width:auto;display:inline-flex;padding:12px 28px;text-decoration:none;">
+      <a href="<?php echo $assetBase; ?>/auth/signup" class="btn btn-primary" style="width:auto;display:inline-flex;padding:12px 28px;text-decoration:none;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         <span>Create Your Portfolio</span>
       </a>
@@ -134,12 +135,12 @@ include __DIR__ . '/includes/og_meta.php';
           </button>
         <?php endif; ?>
         <?php if ($isOwner): ?>
-          <a href="dashboard/profile" class="btn btn-ghost" style="width:auto;padding:8px 16px;font-size:13px;text-decoration:none;">
+          <a href="<?php echo $assetBase; ?>/dashboard/profile" class="btn btn-ghost" style="width:auto;padding:8px 16px;font-size:13px;text-decoration:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             <span>Edit Profile</span>
           </a>
         <?php else: ?>
-          <a href="auth/signup" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
+          <a href="<?php echo $assetBase; ?>/auth/signup" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             <span>Build Your Portfolio</span>
           </a>
@@ -177,12 +178,12 @@ include __DIR__ . '/includes/og_meta.php';
             $bgSize = $isWide ? "auto {$sizePct}%" : "{$sizePct}% auto";
           ?>
           <div class="banner-bg-cover"
-               style="background-image:url('assets/uploads/banners/<?php echo e($user['banner']); ?>');background-size:<?php echo $bgSize; ?>;background-position:<?php echo $posX; ?>% <?php echo $posY; ?>%;"></div>
+               style="background-image:url('<?php echo $assetBase; ?>/assets/uploads/banners/<?php echo e($user['banner']); ?>');background-size:<?php echo $bgSize; ?>;background-position:<?php echo $posX; ?>% <?php echo $posY; ?>%;"></div>
           <div class="banner-overlay"></div>
         <?php elseif ($bannerImages): ?>
           <div class="banner-collage">
             <?php foreach ($bannerImages as $img): ?>
-              <img src="assets/uploads/portfolio/<?php echo e($img['filename']); ?>">
+              <img src="<?php echo $assetBase; ?>/assets/uploads/portfolio/<?php echo e($img['filename']); ?>">
             <?php endforeach; ?>
           </div>
           <div class="banner-overlay"></div>
@@ -196,7 +197,7 @@ include __DIR__ . '/includes/og_meta.php';
         <div class="avatar-wrap">
           <div class="profile-avatar-lg" <?php echo $user['avatar'] ? 'style="background:none;"' : ''; ?>>
             <?php if ($user['avatar']): ?>
-              <img src="assets/uploads/avatars/<?php echo e($user['avatar']); ?>" class="avatar-img">
+              <img src="<?php echo $assetBase; ?>/assets/uploads/avatars/<?php echo e($user['avatar']); ?>" class="avatar-img">
             <?php else: ?>
               <span class="avatar-initials"><?php echo e(initials($user['name'])); ?></span>
             <?php endif; ?>
@@ -302,7 +303,7 @@ include __DIR__ . '/includes/og_meta.php';
       <?php if ($user['cv_file']): ?>
         <div class="about-block">
           <h4>CV / Resume</h4>
-          <a href="assets/uploads/cv/<?php echo e($user['cv_file']); ?>"
+          <a href="<?php echo $assetBase; ?>/assets/uploads/cv/<?php echo e($user['cv_file']); ?>"
              download="<?php echo e($user['cv_original_name']); ?>"
              class="btn btn-ghost" style="width:auto;display:inline-flex;padding:10px 18px;text-decoration:none;margin-top:4px;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -338,7 +339,7 @@ include __DIR__ . '/includes/og_meta.php';
               <?php foreach ($imgs as $img): ?>
                 <div class="card">
                   <div class="thumb-wrap">
-                    <img src="assets/uploads/portfolio/<?php echo e($img['filename']); ?>" class="thumb" loading="lazy">
+                    <img src="<?php echo $assetBase; ?>/assets/uploads/portfolio/<?php echo e($img['filename']); ?>" class="thumb" loading="lazy">
                   </div>
                 </div>
               <?php endforeach; ?>
@@ -364,7 +365,7 @@ include __DIR__ . '/includes/og_meta.php';
 
 <?php
 if ($user && !empty($allImages)) {
-    $pdfModalBaseUrl = 'portfolio_pdf?slug=' . urlencode($slug);
+    $pdfModalBaseUrl = $assetBase . '/portfolio_pdf?slug=' . urlencode($slug);
     $pdfTotalImages = count($allImages);
     $pdfCategoriesCount = [];
     foreach ($allImages as $img) {
