@@ -8,26 +8,6 @@ $isSubscribed = !empty($user['is_subscribed']);
 $pdfUsed = (int) ($user['pdf_downloads_count'] ?? 0);
 $pdfPct = min(100, round(($pdfUsed / $freePdfLimit) * 100));
 ?>
-<?php if (!empty($_SESSION['admin_mode'])): ?>
-<!-- Admin Mode Impersonation Topbar -->
-<div class="admin-mode-topbar">
-  <div class="admin-mode-container">
-    <div class="admin-mode-info">
-      <span class="admin-mode-glow-dot"></span>
-      <span class="admin-mode-badge">⚡ ADMIN MODE</span>
-      <span class="admin-mode-label">Viewing account: <strong><?php echo e($user['name'] ?? 'User'); ?></strong> (<?php echo e($user['email'] ?? ''); ?>)</span>
-    </div>
-    <div class="admin-mode-actions">
-      <a href="../admin/users" class="admin-mode-panel-link">Admin Panel</a>
-      <a href="../admin/exit_user_mode" class="admin-mode-exit-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span>Exit Admin Mode</span>
-      </a>
-    </div>
-  </div>
-</div>
-<?php endif; ?>
-
 <!-- Mobile Top Navigation Header -->
 <header class="mobile-topbar">
   <div class="mobile-brand">
@@ -54,6 +34,34 @@ $pdfPct = min(100, round(($pdfUsed / $freePdfLimit) * 100));
 
 <!-- Sidebar Component -->
 <aside class="sidebar" id="appSidebar">
+  <?php if (!empty($_SESSION['admin_mode'])): ?>
+    <!-- Out-of-flow Floating Topbar for Admin Mode -->
+    <div class="admin-mode-topbar">
+      <div class="admin-mode-container">
+        <div class="admin-mode-info">
+          <span class="admin-mode-glow-dot"></span>
+          <span class="admin-mode-badge">⚡ ADMIN MODE</span>
+          <span class="admin-mode-label">Viewing account: <strong><?php echo e($user['name'] ?? 'User'); ?></strong> (<?php echo e($user['email'] ?? ''); ?>)</span>
+        </div>
+        <div class="admin-mode-actions">
+          <a href="../admin/users" class="admin-mode-panel-link">Admin Panel</a>
+          <a href="../admin/exit_user_mode" class="admin-mode-exit-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Exit Admin Mode</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- In-Sidebar Persistent Badge -->
+    <div class="sidebar-admin-mode-pill">
+      <div class="side-admin-tag">
+        <span class="admin-mode-glow-dot" style="width:7px;height:7px;"></span>
+        <span>ADMIN MODE</span>
+      </div>
+      <a href="../admin/exit_user_mode" class="side-admin-exit-btn">Exit</a>
+    </div>
+  <?php endif; ?>
   <div class="brand-row">
     <div class="brand-mark-glow">
       <div class="brand-mark">
