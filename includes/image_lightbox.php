@@ -1,7 +1,7 @@
 <?php
 /**
  * SaaqiFolio - Fullscreen Image Lightbox Modal
- * Max-width: 96vw, Max-height: 98dvh, object-fit: contain
+ * Max-width: 90vw, Max-height: 90dvh, object-fit: contain
  */
 ?>
 <div id="imageLightboxModal" class="img-lightbox-backdrop" aria-hidden="true" onclick="closeImageLightbox(event)">
