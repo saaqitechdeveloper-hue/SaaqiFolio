@@ -1032,30 +1032,23 @@ html[data-theme="light"] .behance-complete-desc {
     if (typeof showToast === 'function') {
       showToast(`${importedSuccess} artwork(s) imported from Behance!`, 'success', 3500);
     }
+
+    // Refresh entire portfolio gallery, categories, and PDF modal dynamically
+    if (typeof window.refreshPortfolioGallery === 'function') {
+      window.refreshPortfolioGallery();
+    } else if (typeof window.refreshPdfModalData === 'function') {
+      window.refreshPdfModalData();
+    }
+    window.dispatchEvent(new CustomEvent('saaqi:sync', { detail: { action: 'behance_imported', count: importedSuccess } }));
   }
 
   // 3. ZERO-PAGE-RELOAD DYNAMIC CARD INJECTION
   function insertImportedCardToGallery(cardHtml, category) {
     if (!cardHtml) return;
 
-    // A. If page is currently in the empty dropzone state, transition page-wrap
+    // A. If page is currently in the empty dropzone state, refresh when import finishes
     const emptyDropzone = document.getElementById('dropzone');
     if (emptyDropzone) {
-      // Reload only the main content area via AJAX fetch of 'portfolio' without reloading the entire window
-      fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.text())
-        .then(html => {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, 'text/html');
-          const newMain = doc.querySelector('.page-wrap');
-          const currMain = document.querySelector('.page-wrap');
-          if (newMain && currMain) {
-            currMain.innerHTML = newMain.innerHTML;
-            if (typeof initPortfolioDropzones === 'function') initPortfolioDropzones();
-            if (typeof initSortableGrids === 'function') initSortableGrids();
-          }
-        })
-        .catch(() => {});
       return;
     }
 

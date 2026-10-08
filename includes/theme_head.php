@@ -1,5 +1,10 @@
 <script>
 (function() {
+  // Universal Fix: Prevent browser "Confirm Form Resubmission" dialog on page reload or back/forward navigation
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState(null, null, window.location.href);
+  }
+
   try {
     var urlParams = new URLSearchParams(window.location.search);
     var qTheme = urlParams.get('theme');

@@ -16,8 +16,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'restart') {
     exit;
 }
 
-$error = '';
-$success = '';
+$error = $_SESSION['flash_error'] ?? '';
+$success = $_SESSION['flash_success'] ?? '';
+unset($_SESSION['flash_error'], $_SESSION['flash_success']);
 
 // Determine current step
 if (!empty($_SESSION['reset_verified']) && !empty($_SESSION['reset_email'])) {
@@ -71,8 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_otp'])) {
                 $_SESSION['reset_step'] = 'verify_otp';
                 $_SESSION['reset_otp_sent_at'] = time();
                 $_SESSION['reset_verified'] = false;
-                $step = 'verify_otp';
-                $success = 'A 4-digit verification code has been sent to ' . htmlspecialchars($email) . '. It is valid for 5 minutes.';
+                $_SESSION['flash_success'] = 'A 4-digit verification code has been sent to ' . htmlspecialchars($email) . '. It is valid for 5 minutes.';
+                header('Location: forgot_password');
+                exit;
             } else {
                 $error = 'Failed to send verification email. ' . ($mailResult['error'] ? htmlspecialchars($mailResult['error']) : 'Please try again.');
                 $step = 'email';
@@ -124,8 +126,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_otp'])) {
 
             $_SESSION['reset_verified'] = true;
             $_SESSION['reset_step'] = 'new_password';
-            $step = 'new_password';
-            $success = 'Code verified successfully! Now choose your new password.';
+            $_SESSION['flash_success'] = 'Code verified successfully! Now choose your new password.';
+            header('Location: forgot_password');
+            exit;
         }
     }
 }
@@ -173,11 +176,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_otp'])) {
         $mailResult = send_password_reset_otp($email, $otp, $userName);
         if ($mailResult['success']) {
             $_SESSION['reset_otp_sent_at'] = time();
-            $success = 'A new 4-digit code has been sent to ' . htmlspecialchars($email) . '. It is valid for 5 minutes.';
+            $_SESSION['flash_success'] = 'A new 4-digit code has been sent to ' . htmlspecialchars($email) . '. It is valid for 5 minutes.';
+            header('Location: forgot_password');
+            exit;
         } else {
             $error = 'Failed to resend verification email. Please try again.';
+            $step = 'verify_otp';
         }
-        $step = 'verify_otp';
     }
 }
 
@@ -465,6 +470,7 @@ include __DIR__ . '/../includes/og_meta.php';
   </div>
 </div>
 
+<?php include __DIR__ . '/../includes/whatsapp_btn.php'; ?>
 <?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

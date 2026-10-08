@@ -488,8 +488,86 @@ foreach (array_slice($candidateImages, 0, 16) as $img) {
   let currentRenderTask = null;
   let previewDebounceTimer = null;
 
+  // Dynamic PDF Modal Data Refresh
+  window.refreshPdfModalData = function(freshData) {
+    let total = 0;
+    let cats = {};
+
+    if (freshData && typeof freshData.total_images === 'number') {
+      total = freshData.total_images;
+      cats = freshData.categories || {};
+    } else {
+      const cards = document.querySelectorAll('.card[data-img-id]');
+      total = cards.length;
+      cards.forEach(card => {
+        const cat = card.getAttribute('data-category') || card.closest('.cat-section')?.getAttribute('data-cat') || 'Other';
+        cats[cat] = (cats[cat] || 0) + 1;
+      });
+    }
+
+    PREVIEW_USER.total_projects = total;
+    PREVIEW_USER.categories = Object.keys(cats);
+
+    const allSub = document.querySelector('#pdfScopeOptionAll .pdf-scope-sub');
+    if (allSub) {
+      allSub.textContent = `Includes all ${total} works curated into clean categorized chapters.`;
+    }
+
+    const catGrid = document.querySelector('.pdf-cat-checkbox-grid');
+    if (catGrid && Object.keys(cats).length > 0) {
+      let html = '';
+      Object.entries(cats).forEach(([catName, count]) => {
+        if (count <= 0) return;
+        const isChecked = selectedCategories.length === 0 || selectedCategories.includes(catName);
+        html += `
+          <div class="pdf-cat-checkbox-item ${isChecked ? 'checked' : ''}" data-cat="${catName.replace(/"/g, '&quot;')}" onclick="togglePdfCatItem(this, event)">
+            <div class="pdf-cat-checkbox-box">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span class="pdf-cat-label">${catName}</span>
+            <span class="pdf-cat-badge">(${count})</span>
+          </div>
+        `;
+      });
+      catGrid.innerHTML = html;
+      initCategoriesList();
+    }
+
+    if (previewCanvasCache) {
+      previewCanvasCache.clear();
+    }
+  };
+
   // Open & Close Handlers
   window.openPdfExportModal = function() {
+    // 1. Quota check
+    if (window.SaaqiState && !window.SaaqiState.is_subscribed && window.SaaqiState.remaining_pdf !== 'unlimited' && window.SaaqiState.remaining_pdf <= 0) {
+      if (typeof showToast === 'function') {
+        showToast('You have used all free PDF exports. Upgrade to Pro for unlimited exports.', 'danger', 4000);
+      }
+      setTimeout(() => { window.location.href = 'upgrade?pdf_limit=1'; }, 700);
+      return;
+    }
+
+    // 2. Dynamic refresh
+    if (typeof window.refreshPdfModalData === 'function') {
+      window.refreshPdfModalData();
+    }
+
+    // 3. Image count check
+    const currentCardsCount = document.querySelectorAll('.card[data-img-id]').length;
+    const totalImgCount = (window.SaaqiState && typeof window.SaaqiState.total_images === 'number')
+      ? window.SaaqiState.total_images
+      : (currentCardsCount || PREVIEW_USER.total_projects || 0);
+
+    if (totalImgCount <= 0 && currentCardsCount <= 0) {
+      if (typeof showToast === 'function') {
+        showToast('Please upload images to your portfolio first before exporting.', 'danger', 4000);
+      }
+      alert('Please upload images to your portfolio first before exporting.');
+      return;
+    }
+
     const scopeModal = document.getElementById('pdfScopeModal');
     if (scopeModal) {
       scopeModal.classList.add('active');
@@ -998,14 +1076,58 @@ foreach (array_slice($candidateImages, 0, 16) as $img) {
     fetch(targetUrl, {
       method: 'GET',
       headers: {
-        'X-Requested-With': 'XMLHttpRequest'
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/pdf, application/json'
       }
     })
     .then(async (response) => {
       clearInterval(progressInterval);
 
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF. (Server returned HTTP ' + response.status + ')');
+      const contentType = response.headers.get('content-type') || '';
+
+      // Check if server returned JSON or HTTP error (e.g. limit reached 403 or error 400)
+      if (contentType.includes('application/json') || response.status === 403 || !response.ok) {
+        let errJson = null;
+        try {
+          errJson = await response.json();
+        } catch (e) {
+          try {
+            const errText = await response.text();
+            errJson = { error: errText };
+          } catch (e2) {}
+        }
+
+        if (loadingModal) {
+          loadingModal.classList.remove('active');
+          loadingModal.setAttribute('aria-hidden', 'true');
+        }
+        document.body.style.overflow = '';
+
+        if (errJson && errJson.limit_reached) {
+          if (typeof window.syncDashboardPdfButtons === 'function') {
+            window.syncDashboardPdfButtons(0, false);
+          }
+          if (typeof showToast === 'function') {
+            showToast(errJson.error || 'Free download limit reached. Upgrade to Pro for unlimited exports.', 'danger', 5000);
+          } else {
+            alert(errJson.error || 'Free download limit reached. Upgrade to Pro for unlimited exports.');
+          }
+          setTimeout(() => {
+            window.location.href = errJson.redirect || 'upgrade?pdf_limit=1';
+          }, 1200);
+          return;
+        }
+
+        throw new Error((errJson && errJson.error) || ('Server returned HTTP ' + response.status));
+      }
+
+      // Read live quota headers and update UI immediately
+      const remainingHeader = response.headers.get('X-Pdf-Remaining');
+      const subscribedHeader = response.headers.get('X-Pdf-Subscribed');
+      if (remainingHeader !== null && typeof window.syncDashboardPdfButtons === 'function') {
+        const isSub = subscribedHeader === '1' || remainingHeader === 'unlimited';
+        const remNum = isSub ? 'unlimited' : parseInt(remainingHeader, 10);
+        window.syncDashboardPdfButtons(remNum, isSub);
       }
 
       // Complete progress bar
@@ -1064,7 +1186,11 @@ foreach (array_slice($candidateImages, 0, 16) as $img) {
         loadingModal.setAttribute('aria-hidden', 'true');
       }
       document.body.style.overflow = '';
-      alert('Error generating PDF: ' + (err.message || 'Please try again.'));
+      if (typeof showToast === 'function') {
+        showToast('Error generating PDF: ' + (err.message || 'Please try again.'), 'danger', 4500);
+      } else {
+        alert('Error generating PDF: ' + (err.message || 'Please try again.'));
+      }
     });
   };
 

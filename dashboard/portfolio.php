@@ -441,7 +441,7 @@ include __DIR__ . '/../includes/og_meta.php';
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span>Browse Files</span>
               </button>
-              <button type="button" class="btn-behance-featured" onclick="openBehanceImportModal()" style="padding:11px 22px;font-size:14px;">
+              <button type="button" class="btn-behance-featured" data-no-dropzone-click="1" onclick="event.stopPropagation(); event.preventDefault(); openBehanceImportModal();" style="padding:11px 22px;font-size:14px;">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M22 7h-7v-2h7v2zm1.726 10c-.442 1.297-2.029 3-5.101 3-4.356 0-5.746-3.081-5.746-5.918 0-3.327 1.884-6.082 5.753-6.082 4.093 0 5.282 3.013 4.966 6.136h-7.669c.074 1.705.952 2.824 2.83 2.824 1.488 0 2.228-.696 2.617-1.488l2.35.528zm-4.992-4.832c-.067-1.121-.692-2.128-2.316-2.128-1.503 0-2.296 1.007-2.42 2.128h4.736zm-11.734-7.168h4.59c1.944 0 3.41.486 3.41 2.378 0 1.258-.707 1.954-1.636 2.254 1.343.434 2.052 1.439 2.052 2.766 0 2.146-1.748 2.602-3.824 2.602h-4.592v-10zm2.748 3.972h1.611c.783 0 1.505-.125 1.505-1.07 0-.82-.577-.962-1.396-.962h-1.72v2.032zm0 4.068h1.838c.969 0 1.758-.154 1.758-1.229 0-.962-.738-1.122-1.654-1.122h-1.942v2.351z"/></svg>
                 <span>Import from Behance</span>
                 <span class="behance-sparkle-pill">AI</span>
@@ -478,7 +478,7 @@ include __DIR__ . '/../includes/og_meta.php';
                   <span class="mini-dropzone-text">or drop here</span>
                 </div>
               </form>
-              <button type="button" class="btn-behance-featured" onclick="openBehanceImportModal()" style="padding:6px 14px;font-size:12.5px;">
+              <button type="button" class="btn-behance-featured" data-no-dropzone-click="1" onclick="event.stopPropagation(); event.preventDefault(); openBehanceImportModal();" style="padding:6px 14px;font-size:12.5px;">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M22 7h-7v-2h7v2zm1.726 10c-.442 1.297-2.029 3-5.101 3-4.356 0-5.746-3.081-5.746-5.918 0-3.327 1.884-6.082 5.753-6.082 4.093 0 5.282 3.013 4.966 6.136h-7.669c.074 1.705.952 2.824 2.83 2.824 1.488 0 2.228-.696 2.617-1.488l2.35.528zm-4.992-4.832c-.067-1.121-.692-2.128-2.316-2.128-1.503 0-2.296 1.007-2.42 2.128h4.736zm-11.734-7.168h4.59c1.944 0 3.41.486 3.41 2.378 0 1.258-.707 1.954-1.636 2.254 1.343.434 2.052 1.439 2.052 2.766 0 2.146-1.748 2.602-3.824 2.602h-4.592v-10zm2.748 3.972h1.611c.783 0 1.505-.125 1.505-1.07 0-.82-.577-.962-1.396-.962h-1.72v2.032zm0 4.068h1.838c.969 0 1.758-.154 1.758-1.229 0-.962-.738-1.122-1.654-1.122h-1.942v2.351z"/></svg>
                 <span>Import from Behance</span>
                 <span class="behance-sparkle-pill">AI</span>
@@ -878,19 +878,18 @@ document.addEventListener('DOMContentLoaded', initSortableGrids);
 initSortableGrids();
 </script>
 <?php
-if (!empty($canExportPdf) && !empty($allImages)) {
-    $pdfModalBaseUrl = 'download_pdf';
-    $pdfTotalImages = count($allImages);
-    $pdfCategoriesCount = [];
-    foreach ($allImages as $img) {
-        $c = $img['category'] ?? 'Other';
-        $pdfCategoriesCount[$c] = ($pdfCategoriesCount[$c] ?? 0) + 1;
-    }
-    include __DIR__ . '/../includes/pdf_export_modal.php';
+$pdfModalBaseUrl = 'download_pdf';
+$pdfTotalImages = count($allImages ?? []);
+$pdfCategoriesCount = [];
+foreach (($allImages ?? []) as $img) {
+    $c = $img['category'] ?? 'Other';
+    $pdfCategoriesCount[$c] = ($pdfCategoriesCount[$c] ?? 0) + 1;
 }
+include __DIR__ . '/../includes/pdf_export_modal.php';
 ?>
 <?php include __DIR__ . '/../includes/image_lightbox.php'; ?>
 <?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 <?php include __DIR__ . '/../includes/behance_import_modal.php'; ?>
+<?php include __DIR__ . '/../includes/whatsapp_btn.php'; ?>
 </body>
 </html>

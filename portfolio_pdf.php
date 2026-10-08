@@ -29,6 +29,21 @@ $isPreview = isset($_GET['preview']) && $_GET['preview'] === '1';
 
 if (!$isPreview && !can_download_pdf($user)) {
     ob_end_clean();
+    $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+           || (isset($_GET['ajax']) && $_GET['ajax'] === '1')
+           || (str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json'));
+    if ($isAjax) {
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'limit_reached' => true,
+            'remaining' => 0,
+            'redirect' => 'p.php?slug=' . urlencode($slug) . '&limit=1',
+            'error' => 'This creator has reached the free PDF download limit.'
+        ]);
+        exit;
+    }
     header('Location: p.php?slug=' . urlencode($slug) . '&limit=1');
     exit;
 }
@@ -76,6 +91,15 @@ while ($row = mysqli_fetch_assoc($imgRes)) $allImages[] = $row;
 
 if (empty($allImages)) {
     ob_end_clean();
+    $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+           || (isset($_GET['ajax']) && $_GET['ajax'] === '1')
+           || (str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json'));
+    if ($isAjax) {
+        http_response_code(400);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'This selection has no images yet. Please upload artwork before generating a PDF.']);
+        exit;
+    }
     die('This selection has no images yet. PDF cannot be generated.');
 }
 
@@ -111,9 +135,17 @@ $pdf->renderPortfolioDocument(
 );
 
 // Count download towards trial limit if not subscribed and not a preview request
+$newRemaining = 'unlimited';
 if (!$isPreview && !$user['is_subscribed']) {
     increment_pdf_downloads($conn, $userId);
+    $newCount = (int)($user['pdf_downloads_count'] ?? 0) + 1;
+    $newRemaining = (string)max(0, FREE_PDF_LIMIT - $newCount);
 }
+
+header('Access-Control-Expose-Headers: Content-Disposition, X-Pdf-Remaining, X-Pdf-Limit-Reached, X-Pdf-Subscribed');
+header('X-Pdf-Remaining: ' . $newRemaining);
+header('X-Pdf-Limit-Reached: ' . (($newRemaining !== 'unlimited' && (int)$newRemaining <= 0) ? '1' : '0'));
+header('X-Pdf-Subscribed: ' . ($user['is_subscribed'] ? '1' : '0'));
 
 $catSuffix = !empty($selectedCats) ? '-' . slugify(implode('-', $selectedCats)) : '';
 $fileSlug = slugify($user['name'] ?: $slug ?: 'portfolio');

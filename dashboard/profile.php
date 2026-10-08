@@ -503,7 +503,7 @@ include __DIR__ . '/../includes/og_meta.php';
               $canDownloadPdf = $user['is_subscribed'] || ($user['pdf_downloads_count'] ?? 0) < FREE_PDF_LIMIT;
               ?>
               <?php if ($canDownloadPdf): ?>
-                <button type="button" class="btn btn-ghost btn-sm" onclick="openPdfExportModal()">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="handleProfileExportPdf(<?php echo (int)($imageCount ?? 0); ?>)">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   <span>Export Your Portfolio<?php echo $user['is_subscribed'] ? '' : ' (' . $remainingPdf . ' left)'; ?></span>
                 </button>
@@ -844,19 +844,29 @@ function removeCustomTool(btn) {
     item.remove();
   }
 }
+
+function handleProfileExportPdf(count) {
+  if (typeof count === 'undefined' || count <= 0) {
+    if (typeof showToast === 'function') {
+      showToast('Please upload images to your portfolio first before exporting.', 'danger', 4000);
+    }
+    alert('Please upload images to your portfolio first before exporting.');
+    return false;
+  }
+  openPdfExportModal();
+}
 </script>
 <?php
-if (!empty($canDownloadPdf) && !empty($imageCount)) {
-    $pdfModalBaseUrl = 'download_pdf';
-    $pdfTotalImages = $imageCount;
-    $pdfCategoriesCount = [];
-    $countsRes = mysqli_query($conn, "SELECT category, COUNT(*) as cnt FROM portfolio_images WHERE user_id=$userId GROUP BY category");
-    while ($r = mysqli_fetch_assoc($countsRes)) {
-        $pdfCategoriesCount[$r['category']] = (int)$r['cnt'];
-    }
-    include __DIR__ . '/../includes/pdf_export_modal.php';
+$pdfModalBaseUrl = 'download_pdf';
+$pdfTotalImages = $imageCount ?? 0;
+$pdfCategoriesCount = [];
+$countsRes = mysqli_query($conn, "SELECT category, COUNT(*) as cnt FROM portfolio_images WHERE user_id=$userId GROUP BY category");
+while ($r = mysqli_fetch_assoc($countsRes)) {
+    $pdfCategoriesCount[$r['category']] = (int)$r['cnt'];
 }
+include __DIR__ . '/../includes/pdf_export_modal.php';
 ?>
 <?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
+<?php include __DIR__ . '/../includes/whatsapp_btn.php'; ?>
 </body>
 </html>

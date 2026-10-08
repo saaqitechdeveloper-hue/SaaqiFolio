@@ -250,8 +250,8 @@ $tvDesc = get_setting('tutorial_video_desc', 'Watch this quick tutorial to explo
 
 @media (max-width: 600px) {
   .tutorial-fab-wrapper {
-    bottom: 12px;
-    right: 12px;
+    bottom: 16px;
+    right: 7px;
   }
   .tutorial-fab-btn {
     width: 44px;

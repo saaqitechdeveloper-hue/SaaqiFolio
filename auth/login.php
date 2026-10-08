@@ -116,6 +116,7 @@ include __DIR__ . '/../includes/og_meta.php';
   </div>
 </div>
 
+<?php include __DIR__ . '/../includes/whatsapp_btn.php'; ?>
 <?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

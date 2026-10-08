@@ -88,11 +88,12 @@ $assetBase = get_site_root_url();
           <span class="brand-name">SaaqiFolio</span>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
+      <div class="public-topbar-actions">
         <?php include __DIR__ . '/includes/theme_switcher.php'; ?>
-        <a href="<?php echo $assetBase; ?>/auth/signup" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
+        <a href="<?php echo $assetBase; ?>/auth/signup" class="btn btn-primary" style="width:auto;text-decoration:none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-          <span>Get Started</span>
+          <span class="btn-text-full">Get Started</span>
+          <span class="btn-text-short">Start</span>
         </a>
       </div>
     </div>
@@ -134,18 +135,21 @@ $assetBase = get_site_root_url();
         <?php if (!empty($allImages)): ?>
           <button type="button" class="btn-pdf" onclick="openPdfExportModal()" title="Export Portfolio as PDF">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-            <span>Export Your Portfolio</span>
+            <span class="btn-text-full">Export Your Portfolio</span>
+            <span class="btn-text-short">Export PDF</span>
           </button>
         <?php endif; ?>
         <?php if ($isOwner): ?>
-          <a href="<?php echo $assetBase; ?>/dashboard/profile" class="btn btn-ghost" style="width:auto;padding:8px 16px;font-size:13px;text-decoration:none;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <span>Edit Profile</span>
+          <a href="<?php echo $assetBase; ?>/dashboard/profile" class="btn btn-ghost" style="width:auto;text-decoration:none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span class="btn-text-full">Edit Profile</span>
+            <span class="btn-text-short">Edit</span>
           </a>
         <?php else: ?>
-          <a href="<?php echo $assetBase; ?>/auth/signup" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
+          <a href="<?php echo $assetBase; ?>/auth/signup" class="btn btn-primary" style="width:auto;text-decoration:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            <span>Build Your Portfolio</span>
+            <span class="btn-text-full">Build Your Portfolio</span>
+            <span class="btn-text-short">Create</span>
           </a>
         <?php endif; ?>
       </div>
@@ -203,8 +207,12 @@ $assetBase = get_site_root_url();
       <div class="profile-header-row profile-hero-row">
         <div class="avatar-wrap">
           <div class="profile-avatar-lg" <?php echo $user['avatar'] ? 'style="background:none;"' : ''; ?>>
-            <?php if ($user['avatar']): ?>
-              <img src="<?php echo $assetBase; ?>/assets/uploads/avatars/<?php echo e($user['avatar']); ?>" class="avatar-img" decoding="async" width="108" height="108" alt="<?php echo e($user['name']); ?>">
+            <?php 
+              $hasAvatarFile = !empty($user['avatar']) && file_exists(__DIR__ . '/assets/uploads/avatars/' . $user['avatar']);
+            ?>
+            <?php if ($hasAvatarFile): ?>
+              <img src="<?php echo $assetBase; ?>/assets/uploads/avatars/<?php echo e($user['avatar']); ?>" class="avatar-img" decoding="async" width="108" height="108" alt="<?php echo e($user['name']); ?>" onerror="this.style.display='none';this.parentElement.querySelector('.avatar-initials-fallback')?.removeAttribute('hidden');">
+              <span class="avatar-initials avatar-initials-fallback" hidden><?php echo e(initials($user['name'])); ?></span>
             <?php else: ?>
               <span class="avatar-initials"><?php echo e(initials($user['name'])); ?></span>
             <?php endif; ?>
@@ -215,14 +223,15 @@ $assetBase = get_site_root_url();
           <div class="profile-role-lg"><?php echo e($user['profession']); ?></div>
         </div>
         <div class="profile-actions-row profile-hero-actions">
-          <a class="btn btn-primary" style="width:auto;padding:9px 18px;font-size:13px;text-decoration:none;" href="mailto:<?php echo e($user['email']); ?>">
+          <a class="btn btn-primary" href="mailto:<?php echo e($user['email']); ?>">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             <span>Contact</span>
           </a>
           <?php if (!empty($allImages)): ?>
             <button type="button" class="btn-pdf" onclick="openPdfExportModal()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-              <span>Export Your Portfolio</span>
+              <span class="btn-text-full">Export Your Portfolio</span>
+              <span class="btn-text-short">Export PDF</span>
             </button>
           <?php endif; ?>
         </div>
@@ -326,7 +335,8 @@ $assetBase = get_site_root_url();
           <?php if (!empty($allImages)): ?>
             <button type="button" class="btn-pdf" onclick="openPdfExportModal()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-              <span>Export Your Portfolio</span>
+              <span class="btn-text-full">Export Your Portfolio</span>
+              <span class="btn-text-short">Export PDF</span>
             </button>
           <?php endif; ?>
         </div>
@@ -387,6 +397,5 @@ if ($user && !empty($allImages)) {
 }
 ?>
 <?php include __DIR__ . '/includes/image_lightbox.php'; ?>
-<?php include __DIR__ . '/includes/tutorial_video_modal.php'; ?>
 </body>
 </html>

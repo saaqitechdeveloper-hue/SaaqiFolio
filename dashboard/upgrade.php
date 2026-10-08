@@ -286,5 +286,6 @@ include __DIR__ . '/../includes/og_meta.php';
 </div>
 
 <?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
+<?php include __DIR__ . '/../includes/whatsapp_btn.php'; ?>
 </body>
 </html>
