@@ -96,6 +96,7 @@ include __DIR__ . '/../includes/og_meta.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<?php include __DIR__ . '/../includes/theme_head.php'; ?>
 <script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
@@ -111,11 +112,14 @@ include __DIR__ . '/../includes/og_meta.php';
         <div class="page-title"><?php echo e($user['name']); ?></div>
         <div class="page-desc"><?php echo e($user['public_slug']); ?> · Joined <?php echo date('d M Y', strtotime($user['created_at'])); ?></div>
       </div>
-      <a href="login_as_user?id=<?php echo $user['id']; ?>" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;display:inline-flex;align-items:center;gap:8px;"
-         onclick="return confirm('Directly login to <?php echo e(addslashes($user['name'])); ?>\'s account in Admin Mode?');">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-        <span>Login as User (Admin Mode)</span>
-      </a>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
+        <a href="login_as_user?id=<?php echo $user['id']; ?>" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;display:inline-flex;align-items:center;gap:8px;"
+           onclick="return confirm('Directly login to <?php echo e(addslashes($user['name'])); ?>\'s account in Admin Mode?');">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          <span>Login as User (Admin Mode)</span>
+        </a>
+      </div>
     </div>
 
     <?php if ($success): ?><div class="auth-error" style="background:#3DDC9726;color:#3DDC97;"><?php echo e($success); ?></div><?php endif; ?>

@@ -46,6 +46,7 @@ include __DIR__ . '/../includes/og_meta.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<?php include __DIR__ . '/../includes/theme_head.php'; ?>
 <script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
@@ -59,6 +60,16 @@ include __DIR__ . '/../includes/og_meta.php';
 
   <main class="main">
     <div class="page-wrap">
+      <!-- Top Dashboard Header / Switcher Bar -->
+      <div class="dash-top-bar">
+        <div class="dash-top-left">
+          <span class="dash-top-greeting">Welcome back, <strong><?php echo e($user['name'] ?? 'Creator'); ?></strong></span>
+          <span class="dash-top-badge">MEMBERSHIP</span>
+        </div>
+        <div class="dash-top-right">
+          <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
+        </div>
+      </div>
       <div class="page-head">
         <div class="page-title">Elevate to <span class="grad-text">SaaqiFolio Pro</span></div>
         <div class="page-desc">Supercharge your design career with unlimited portfolio storage, custom branding, and instant PDF client proposals.</div>

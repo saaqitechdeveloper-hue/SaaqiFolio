@@ -148,6 +148,8 @@ $skills = skills_to_array($user['skills']);
 $posX = $user['banner_pos_x'] ?? 50;
 $posY = $user['banner_pos_y'] ?? 50;
 $zoom = $user['banner_zoom'] ?? 100;
+$remainingPdf = $user['is_subscribed'] ? 'Unlimited' : max(0, FREE_PDF_LIMIT - (int)($user['pdf_downloads_count'] ?? 0));
+$canDownloadPdf = $user['is_subscribed'] || ($user['pdf_downloads_count'] ?? 0) < FREE_PDF_LIMIT;
 $activeNav = 'profile';
 ?>
 <!DOCTYPE html>
@@ -166,6 +168,7 @@ include __DIR__ . '/../includes/og_meta.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<?php include __DIR__ . '/../includes/theme_head.php'; ?>
 <script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
@@ -175,6 +178,16 @@ include __DIR__ . '/../includes/og_meta.php';
 
   <main class="main">
     <div class="page-wrap">
+      <!-- Top Dashboard Header / Switcher Bar -->
+      <div class="dash-top-bar">
+        <div class="dash-top-left">
+          <span class="dash-top-greeting">Welcome back, <strong><?php echo e($user['name'] ?? 'Creator'); ?></strong></span>
+          <span class="dash-top-badge">PROFILE</span>
+        </div>
+        <div class="dash-top-right">
+          <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
+        </div>
+      </div>
       <?php if (isset($_GET['welcome'])): ?>
         <div class="alert-glass success">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -256,16 +269,47 @@ include __DIR__ . '/../includes/og_meta.php';
 
           <div class="field">
             <label>Design &amp; Creative Tools Mastery</label>
-            <div class="skill-grid">
-              <?php foreach (get_software_list() as $s): ?>
+            <div class="skill-grid" id="toolsGrid">
+              <?php
+                $defaultSoftwares = get_software_list();
+                $customSkills = array_values(array_filter($skills, fn($sk) => !in_array($sk, $defaultSoftwares)));
+              ?>
+              <?php foreach ($defaultSoftwares as $s): ?>
                 <label class="skill-check">
                   <input type="checkbox" name="skills[]" value="<?php echo e($s); ?>" <?php echo in_array($s, $skills) ? 'checked' : ''; ?>>
                   <span class="skill-pill">
                     <svg class="skill-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
-                    <span><?php echo e($s); ?></span>
+                    <span class="tool-name"><?php echo e($s); ?></span>
                   </span>
                 </label>
               <?php endforeach; ?>
+
+              <?php foreach ($customSkills as $cs): ?>
+                <label class="skill-check custom-tool-item">
+                  <input type="checkbox" name="skills[]" value="<?php echo e($cs); ?>" checked>
+                  <span class="skill-pill">
+                    <svg class="skill-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="tool-name"><?php echo e($cs); ?></span>
+                    <span class="custom-tool-actions" onclick="event.preventDefault(); event.stopPropagation();">
+                      <button type="button" class="custom-tool-btn btn-edit-tool" title="Edit tool name" onclick="editCustomTool(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button type="button" class="custom-tool-btn btn-del-tool" title="Delete custom tool" onclick="removeCustomTool(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </button>
+                    </span>
+                  </span>
+                </label>
+              <?php endforeach; ?>
+            </div>
+
+            <!-- Custom Tool Adder Input Group -->
+            <div class="custom-tool-adder-row" style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+              <input type="text" id="newCustomToolInput" placeholder="Add custom tool (e.g. Cinema 4D, Midjourney, CorelDRAW...)" style="flex:1;max-width:380px;height:40px;padding:8px 12px;font-size:13px;border-radius:var(--radius-sm);background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-main);" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTool();}">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="addCustomTool()" style="height:40px;padding:0 16px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Tool</span>
+              </button>
             </div>
           </div>
 
@@ -409,7 +453,7 @@ include __DIR__ . '/../includes/og_meta.php';
             <div class="avatar-wrap">
               <div class="profile-avatar-lg">
                 <?php if ($user['avatar']): ?>
-                  <img src="../assets/uploads/avatars/<?php echo e($user['avatar']); ?>" class="avatar-img" alt="<?php echo e($user['name']); ?>">
+                  <img src="../assets/uploads/avatars/<?php echo e($user['avatar']); ?>" class="avatar-img" alt="<?php echo e($user['name']); ?>" decoding="async" width="108" height="108">
                 <?php else: ?>
                   <span class="avatar-initials"><?php echo e(initials($user['name'])); ?></span>
                 <?php endif; ?>
@@ -617,8 +661,12 @@ include __DIR__ . '/../includes/og_meta.php';
             </div>
             <div class="featured-grid">
               <?php mysqli_data_seek($featuredRes, 0); while ($img = mysqli_fetch_assoc($featuredRes)): ?>
+                <?php 
+                  $thumb = get_portfolio_thumbnail_url($img['filename'], '..'); 
+                  $imgSrc = $thumb ?: ('../assets/uploads/portfolio/' . e($img['filename']));
+                ?>
                 <div class="featured-thumb">
-                  <img src="../assets/uploads/portfolio/<?php echo e($img['filename']); ?>" alt="Featured preview" loading="lazy">
+                  <img src="<?php echo e($imgSrc); ?>" alt="Featured preview" loading="lazy" decoding="async" width="280" height="200">
                 </div>
               <?php endwhile; ?>
             </div>
@@ -723,7 +771,7 @@ function copyShareLink(){
     form.banner_pos_x.value = newX;
     form.banner_pos_y.value = newY;
     livePreviewBanner();
-  });
+  }, { passive: true });
 
   window.addEventListener('mouseup', () => {
     if (isDraggingBanner) {
@@ -735,12 +783,71 @@ function copyShareLink(){
         banner.style.cursor = '';
       }
     }
-  });
+  }, { passive: true });
 })();
+
+function addCustomTool() {
+  const input = document.getElementById('newCustomToolInput');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+
+  // Check if tool already exists
+  const existingInputs = document.querySelectorAll('#toolsGrid input[name="skills[]"]');
+  for (let inp of existingInputs) {
+    if (inp.value.toLowerCase() === val.toLowerCase()) {
+      inp.checked = true;
+      input.value = '';
+      return;
+    }
+  }
+
+  const grid = document.getElementById('toolsGrid');
+  const label = document.createElement('label');
+  label.className = 'skill-check custom-tool-item';
+  label.innerHTML = `
+    <input type="checkbox" name="skills[]" value="${val.replace(/"/g, '&quot;')}" checked>
+    <span class="skill-pill">
+      <svg class="skill-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+      <span class="tool-name">${val.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+      <span class="custom-tool-actions" onclick="event.preventDefault(); event.stopPropagation();">
+        <button type="button" class="custom-tool-btn btn-edit-tool" title="Edit tool name" onclick="editCustomTool(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button type="button" class="custom-tool-btn btn-del-tool" title="Delete custom tool" onclick="removeCustomTool(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </span>
+    </span>
+  `;
+  grid.appendChild(label);
+  input.value = '';
+}
+
+function editCustomTool(btn) {
+  const item = btn.closest('.custom-tool-item');
+  if (!item) return;
+  const input = item.querySelector('input[type="checkbox"]');
+  const nameEl = item.querySelector('.tool-name');
+  const currentVal = input.value;
+  const newVal = prompt('Edit tool name:', currentVal);
+  if (newVal !== null && newVal.trim() !== '') {
+    const trimmed = newVal.trim();
+    input.value = trimmed;
+    nameEl.textContent = trimmed;
+  }
+}
+
+function removeCustomTool(btn) {
+  const item = btn.closest('.custom-tool-item');
+  if (item && confirm('Remove this tool?')) {
+    item.remove();
+  }
+}
 </script>
 <?php
-if ($canDownloadPdf && $imageCount > 0) {
-    $pdfModalBaseUrl = 'download_pdf.php';
+if (!empty($canDownloadPdf) && !empty($imageCount)) {
+    $pdfModalBaseUrl = 'download_pdf';
     $pdfTotalImages = $imageCount;
     $pdfCategoriesCount = [];
     $countsRes = mysqli_query($conn, "SELECT category, COUNT(*) as cnt FROM portfolio_images WHERE user_id=$userId GROUP BY category");

@@ -94,8 +94,11 @@ function handle_image_upload($fileInput, $destDir, $maxMB = 30) {
  * Generate an ultra-compressed, responsive AVIF thumbnail (with WebP/JPEG fallback)
  * Keeps max dimension at 720px to prevent layout freezing and memory bloat.
  */
-function generate_portfolio_thumbnail($sourcePath, $thumbDir = null, $maxDim = 720, $quality = 75) {
+function generate_portfolio_thumbnail($sourcePath, $thumbDir = null, $maxDim = 850, $quality = 82) {
     if (!file_exists($sourcePath)) return false;
+
+    // Ensure sufficient memory for processing large mockups/canvases
+    @ini_set('memory_limit', '256M');
 
     if ($thumbDir === null) {
         $thumbDir = dirname($sourcePath) . '/thumbs';
@@ -118,6 +121,7 @@ function generate_portfolio_thumbnail($sourcePath, $thumbDir = null, $maxDim = 7
 
     $origW = (int) $info[0];
     $origH = (int) $info[1];
+    if ($origW <= 0 || $origH <= 0) return false;
     $mime = $info['mime'] ?? '';
 
     $srcImg = null;
@@ -177,14 +181,55 @@ function generate_portfolio_thumbnail($sourcePath, $thumbDir = null, $maxDim = 7
         } catch (\Throwable $e) {}
     }
 
-    // Scale dimensions proportionally
-    if ($origW > $maxDim || $origH > $maxDim) {
-        $ratio = min($maxDim / $origW, $maxDim / $origH);
-        $newW = max(1, (int) round($origW * $ratio));
-        $newH = max(1, (int) round($origH * $ratio));
+    // Smart thumbnail sizing & aspect-ratio aware sampling:
+    // Ensures crisp resolution (minimum 800-850px width/height) so thumbnails
+    // never appear pixelated or blurry in cards, even on 2x Retina screens.
+    $targetDim = max(800, (int) $maxDim);
+    $aspectRatio = $origH / $origW;
+
+    $srcSampleX = 0;
+    $srcSampleY = 0;
+    $srcSampleW = $origW;
+    $srcSampleH = $origH;
+
+    if ($aspectRatio > 1.35) {
+        // Tall / Ultra-tall image (e.g. UI/UX web designs, landing page mockups, long mobile scrolls)
+        // Ensure width is sharp (at least min($origW, 850px)), never starved by massive height.
+        $newW = min($origW, $targetDim);
+        $scale = $newW / $origW;
+        $fullH = (int) round($origH * $scale);
+
+        // Cap preview height to 1600px so we capture the hero banner & header crisply
+        // without ballooning the thumbnail file size for grid cards.
+        $maxThumbH = 1600;
+        if ($fullH > $maxThumbH) {
+            $newH = $maxThumbH;
+            $srcSampleH = min($origH, (int) round($newH / $scale));
+        } else {
+            $newH = max(1, $fullH);
+        }
+    } elseif ($aspectRatio < 0.45) {
+        // Ultra-wide image (e.g. panoramic banners, multi-monitor compositions)
+        $newH = min($origH, 650);
+        $scale = $newH / $origH;
+        $fullW = (int) round($origW * $scale);
+        $maxThumbW = 1400;
+        if ($fullW > $maxThumbW) {
+            $newW = $maxThumbW;
+            $srcSampleW = min($origW, (int) round($newW / $scale));
+        } else {
+            $newW = max(1, $fullW);
+        }
     } else {
-        $newW = $origW;
-        $newH = $origH;
+        // Standard aspect ratio (square, landscape, standard portrait)
+        if ($origW > $targetDim || $origH > $targetDim) {
+            $ratio = min($targetDim / $origW, $targetDim / $origH);
+            $newW = max(1, (int) round($origW * $ratio));
+            $newH = max(1, (int) round($origH * $ratio));
+        } else {
+            $newW = $origW;
+            $newH = $origH;
+        }
     }
 
     $dstImg = imagecreatetruecolor($newW, $newH);
@@ -192,27 +237,31 @@ function generate_portfolio_thumbnail($sourcePath, $thumbDir = null, $maxDim = 7
     imagesavealpha($dstImg, true);
     $transparent = imagecolorallocatealpha($dstImg, 255, 255, 255, 127);
     imagefilledrectangle($dstImg, 0, 0, $newW, $newH, $transparent);
-    imagecopyresampled($dstImg, $srcImg, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+    imagecopyresampled($dstImg, $srcImg, 0, 0, $srcSampleX, $srcSampleY, $newW, $newH, $srcSampleW, $srcSampleH);
 
-    // Save as AVIF (highest compression + modern fidelity)
+    // Save as AVIF (highest compression + modern fidelity at quality 80-82)
     $savedName = false;
+    $avifQuality = max(80, (int) $quality);
+    $webpQuality = max(82, (int) $quality);
+    $jpegQuality = max(85, (int) $quality);
+
     if (function_exists('imageavif')) {
         $targetFile = $thumbDir . '/' . $baseName . '.avif';
-        if (@imageavif($dstImg, $targetFile, $quality)) {
+        if (@imageavif($dstImg, $targetFile, $avifQuality)) {
             $savedName = $baseName . '.avif';
         }
     }
     // WebP fallback
     if (!$savedName && function_exists('imagewebp')) {
         $targetFile = $thumbDir . '/' . $baseName . '.webp';
-        if (@imagewebp($dstImg, $targetFile, $quality)) {
+        if (@imagewebp($dstImg, $targetFile, $webpQuality)) {
             $savedName = $baseName . '.webp';
         }
     }
     // JPEG fallback
     if (!$savedName) {
         $targetFile = $thumbDir . '/' . $baseName . '.jpg';
-        if (@imagejpeg($dstImg, $targetFile, max(60, $quality))) {
+        if (@imagejpeg($dstImg, $targetFile, $jpegQuality)) {
             $savedName = $baseName . '.jpg';
         }
     }
@@ -820,16 +869,12 @@ function resolve_upload_path($subfolder, $filename) {
     if (file_exists($localPath)) {
         return $localPath;
     }
-    $httpHost = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $isLocal = in_array($httpHost, ['localhost', '127.0.0.1', '::1']) || str_starts_with($httpHost, 'localhost:');
-    if ($isLocal) {
-        $liveUrl = 'https://saaqifolio.com/assets/uploads/' . trim($subfolder, '/') . '/' . rawurlencode($filename);
-        $dir = dirname($localPath);
-        if (!is_dir($dir)) @mkdir($dir, 0777, true);
-        $content = @file_get_contents($liveUrl);
-        if ($content !== false && strlen($content) > 0) {
-            @file_put_contents($localPath, $content);
-            return $localPath;
+    // Check if thumbnail exists locally in thumbs/
+    $baseName = pathinfo($filename, PATHINFO_FILENAME);
+    $thumbDir = dirname($localPath) . '/thumbs';
+    foreach (['.avif', '.webp', '.jpg', '.png', '.svg'] as $ext) {
+        if (file_exists($thumbDir . '/' . $baseName . $ext)) {
+            return $thumbDir . '/' . $baseName . $ext;
         }
     }
     return null;

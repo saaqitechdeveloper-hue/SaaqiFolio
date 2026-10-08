@@ -83,3 +83,20 @@ ServerSignature Off
     Header set Expires "0"
   </FilesMatch>
 </IfModule>
+
+# ----------------------------------------------------------------------
+# 5. MIME TYPE DEFINITIONS (.avif, .webp, svg, etc.)
+# ----------------------------------------------------------------------
+<IfModule mod_mime.c>
+  AddType image/avif .avif
+  AddType image/webp .webp
+  AddType image/svg+xml .svg .svgz
+</IfModule>
+
+# Fallback via mod_headers if mod_mime is not active
+<IfModule mod_headers.c>
+  <FilesMatch "\.avif$">
+    Header set Content-Type "image/avif"
+  </FilesMatch>
+</IfModule>
+

@@ -45,6 +45,7 @@ include __DIR__ . '/../includes/og_meta.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<?php include __DIR__ . '/../includes/theme_head.php'; ?>
 <script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
@@ -63,7 +64,8 @@ include __DIR__ . '/../includes/og_meta.php';
           </div>
           <div class="page-desc">Platform overview — users, subscriptions, and revenue.</div>
         </div>
-        <div style="display:flex;gap:10px;">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
           <a href="users" class="btn btn-ghost btn-sm" style="width:auto;text-decoration:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Manage Users

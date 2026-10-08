@@ -97,6 +97,7 @@ include __DIR__ . '/../includes/og_meta.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<?php include __DIR__ . '/../includes/theme_head.php'; ?>
 <script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
@@ -106,14 +107,17 @@ include __DIR__ . '/../includes/og_meta.php';
 
   <div class="admin-main">
     <div class="page-head" style="margin-bottom:28px;">
-      <div>
-        <div class="page-title">Project Tutorial Video</div>
-        <div class="page-desc">Configure external video link (YouTube, Vimeo) or directly upload video file displayed across creator and auth pages.</div>
-      </div>
-      <div>
-        <span class="badge-status <?php echo $videoEnabled ? 'badge-completed' : 'badge-failed'; ?>" style="font-size:12px;padding:6px 14px;">
-          <?php echo $videoEnabled ? '● Video Popup ACTIVE' : '○ Video Popup DISABLED'; ?>
-        </span>
+      <div class="page-head-row">
+        <div>
+          <div class="page-title">Project Tutorial Video</div>
+          <div class="page-desc">Configure external video link (YouTube, Vimeo) or directly upload video file displayed across creator and auth pages.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
+          <span class="badge-status <?php echo $videoEnabled ? 'badge-completed' : 'badge-failed'; ?>" style="font-size:12px;padding:6px 14px;">
+            <?php echo $videoEnabled ? '● Video Popup ACTIVE' : '○ Video Popup DISABLED'; ?>
+          </span>
+        </div>
       </div>
     </div>
 

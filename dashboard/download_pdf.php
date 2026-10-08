@@ -22,7 +22,9 @@ mysqli_stmt_bind_param($stmt, 'i', $userId);
 mysqli_stmt_execute($stmt);
 $user = mysqli_stmt_get_result($stmt)->fetch_assoc();
 
-if (!can_download_pdf($user)) {
+$isPreview = isset($_GET['preview']) && $_GET['preview'] === '1';
+
+if (!$isPreview && !can_download_pdf($user)) {
     ob_end_clean();
     header('Location: upgrade.php?pdf_limit=1');
     exit;
@@ -40,9 +42,16 @@ if (is_array($rawCats)) {
 }
 
 $requestedTpl = clean($conn, $_GET['template'] ?? 'obsidian');
-if (!in_array($requestedTpl, ['obsidian', 'atelier', 'creative'])) {
+if (!in_array($requestedTpl, ['obsidian', 'cyber', 'swiss', 'atelier', 'creative'])) {
     $requestedTpl = 'obsidian';
 }
+
+$themeMode = clean($conn, $_GET['theme_mode'] ?? $_GET['mode'] ?? 'dark');
+if (!in_array($themeMode, ['dark', 'light'])) {
+    $themeMode = 'dark';
+}
+
+$accentColor = clean($conn, $_GET['accent'] ?? '');
 
 // ---------- Gather portfolio data ----------
 if (!empty($selectedCats)) {
@@ -70,7 +79,7 @@ if (empty($allImages)) {
 $skills = skills_to_array($user['skills']);
 
 // ---------- Build the PDF with Selected Template ----------
-$pdf = new SimplePdf($requestedTpl);
+$pdf = new SimplePdf($requestedTpl, $themeMode, $accentColor, $isPreview);
 
 $contactParts = array_filter([$user['email'], $user['phone'], $user['address']]);
 $avatarPath = !empty($user['avatar']) ? resolve_upload_path('avatars', $user['avatar']) : null;
@@ -79,7 +88,6 @@ $catsWithImages = array_filter($catsToRender, function($cat) use ($allImages) {
     return !empty(array_filter($allImages, fn($i) => $i['category'] === $cat));
 });
 
-// Page 1: Cover Page
 if (!empty($selectedCats)) {
     $colName = count($selectedCats) <= 2 ? implode(' & ', $selectedCats) : 'CURATED';
     $curatedDate = 'VERIFIED SAAQIFOLIO DESIGNER | ' . strtoupper($colName) . ' COLLECTION';
@@ -87,52 +95,23 @@ if (!empty($selectedCats)) {
     $curatedDate = 'VERIFIED SAAQIFOLIO DESIGNER | CURATED ' . strtoupper(date('j M Y'));
 }
 
-$pdf->renderCoverPage(
-    $user['name'],
-    $user['profession'],
-    $user['bio'] ?? '',
-    $contactParts,
-    $curatedDate,
-    $avatarPath
-);
-
-// Page 2: Profile & Stats & Tools Page
-$pdf->renderProfilePage(
-    $user['name'],
-    $user['profession'],
-    $user['bio'] ?? '',
-    count($allImages),
-    count($catsWithImages),
+// Master Render: dispatches to Swiss Editorial, Cyber Minimalist, or Obsidian Noir
+$pdf->renderPortfolioDocument(
+    $user,
+    $allImages,
+    $catsWithImages,
     $skills,
     $contactParts,
-    $user['education'] ?? '',
-    $user['experience'] ?? ''
+    $avatarPath,
+    $curatedDate,
+    $isPreview
 );
 
-// Pages 3+: Category Showcase Pages
-foreach ($catsToRender as $cat) {
-    $imgsInCat = array_values(array_filter($allImages, fn($i) => $i['category'] === $cat));
-    if (empty($imgsInCat)) continue;
-
-    $paths = [];
-    foreach ($imgsInCat as $img) {
-        $p = resolve_upload_path('portfolio', $img['filename']);
-        if ($p) $paths[] = $p;
-    }
-
-    if (!empty($paths)) {
-        $pdf->renderCategoryShowcasePage($cat, $paths, $user['name'], $user['profession']);
-    }
-}
-
-// Final Closing Page: "Let's work together"
-$pdf->renderClosingPage($user['name'], $user['profession'], $contactParts);
-
 // Count this download against the trial limit (Pro accounts are unaffected by the check above).
-if (!$user['is_subscribed']) {
+if (!$isPreview && !$user['is_subscribed']) {
     increment_pdf_downloads($conn, $userId);
 }
 
 $scopeSuffix = !empty($selectedCats) ? '-' . slugify(implode('-', $selectedCats)) : '';
 $filename = slugify($user['name']) . $scopeSuffix . '-portfolio.pdf';
-$pdf->output($filename);
+$pdf->output($filename, $isPreview ? 'inline' : 'attachment');

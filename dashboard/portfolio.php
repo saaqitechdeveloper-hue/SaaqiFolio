@@ -234,6 +234,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'reor
     exit;
 }
 
+// ---------- POST: AJAX Behance Extraction & Import ----------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'behance_extract') {
+    header('Content-Type: application/json');
+    require_once __DIR__ . '/../includes/behance_helper.php';
+
+    $url = trim($_POST['url'] ?? '');
+    if (empty($url)) {
+        echo json_encode(['success' => false, 'error' => 'Please enter a Behance URL']);
+        exit;
+    }
+
+    $countRes = mysqli_query($conn, "SELECT COUNT(*) AS cnt FROM portfolio_images WHERE user_id=$userId");
+    $currentCount = (int) mysqli_fetch_assoc($countRes)['cnt'];
+    $remainingSlots = $user['is_subscribed'] ? PHP_INT_MAX : (FREE_IMAGE_LIMIT - $currentCount);
+
+    if (!$user['is_subscribed'] && $remainingSlots <= 0) {
+        echo json_encode([
+            'success' => false,
+            'error' => "Free plan limit (" . FREE_IMAGE_LIMIT . " images) reached. Upgrade to Pro to import more artworks."
+        ]);
+        exit;
+    }
+
+    $data = behance_extract_portfolio($url);
+    if (!$data['success']) {
+        echo json_encode(['success' => false, 'error' => $data['error'] ?? 'Extraction failed']);
+        exit;
+    }
+
+    $extracted = $data['images'] ?? [];
+    if (!$user['is_subscribed'] && count($extracted) > $remainingSlots) {
+        $extracted = array_slice($extracted, 0, $remainingSlots);
+    }
+
+    echo json_encode([
+        'success' => true,
+        'type' => $data['type'] ?? 'gallery',
+        'title' => $data['title'] ?? 'Behance Artworks',
+        'total' => count($extracted),
+        'images' => $extracted,
+        'remaining_slots' => $remainingSlots,
+        'limit_capped' => (!$user['is_subscribed'] && count($data['images']) > $remainingSlots)
+    ]);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'behance_import_item') {
+    header('Content-Type: application/json');
+    require_once __DIR__ . '/../includes/behance_helper.php';
+
+    $countRes = mysqli_query($conn, "SELECT COUNT(*) AS cnt FROM portfolio_images WHERE user_id=$userId");
+    $currentCount = (int) mysqli_fetch_assoc($countRes)['cnt'];
+    if (!$user['is_subscribed'] && $currentCount >= FREE_IMAGE_LIMIT) {
+        echo json_encode(['success' => false, 'error' => 'Free plan limit reached. Upgrade to Pro.']);
+        exit;
+    }
+
+    $imgItem = [
+        'url' => trim($_POST['url'] ?? ''),
+        'title' => trim($_POST['title'] ?? ''),
+        'alt' => trim($_POST['alt'] ?? ''),
+    ];
+
+    if (empty($imgItem['url'])) {
+        echo json_encode(['success' => false, 'error' => 'Invalid image item URL']);
+        exit;
+    }
+
+    $res = behance_import_and_classify_single($userId, $imgItem, $categories, $conn);
+    if (!$res['success']) {
+        echo json_encode(['success' => false, 'error' => $res['error'] ?? 'Failed to import artwork']);
+        exit;
+    }
+
+    // Render image card HTML for immediate dynamic DOM insertion
+    $img = [
+        'id' => $res['image']['id'],
+        'filename' => $res['image']['filename'],
+        'category' => $res['image']['category']
+    ];
+    ob_start();
+    include __DIR__ . '/_image_card.php';
+    $cardHtml = ob_get_clean();
+
+    echo json_encode([
+        'success' => true,
+        'image' => $img,
+        'card_html' => $cardHtml,
+        'category' => $img['category'],
+        'id' => $img['id']
+    ]);
+    exit;
+}
+
+
 // ---------- Load images ----------
 $activeCategory = $_GET['category'] ?? 'All';
 $allImagesRes = mysqli_query($conn, "SELECT * FROM portfolio_images WHERE user_id=$userId ORDER BY sort_order ASC, id DESC");
@@ -270,6 +365,7 @@ include __DIR__ . '/../includes/og_meta.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<?php include __DIR__ . '/../includes/theme_head.php'; ?>
 <script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
@@ -279,6 +375,16 @@ include __DIR__ . '/../includes/og_meta.php';
 
   <main class="main">
     <div class="page-wrap">
+      <!-- Top Dashboard Header / Switcher Bar -->
+      <div class="dash-top-bar">
+        <div class="dash-top-left">
+          <span class="dash-top-greeting">Welcome back, <strong><?php echo e($user['name'] ?? 'Creator'); ?></strong></span>
+          <span class="dash-top-badge">STUDIO</span>
+        </div>
+        <div class="dash-top-right">
+          <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
+        </div>
+      </div>
       <?php if ($success): ?>
         <div class="alert-glass success">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -331,9 +437,14 @@ include __DIR__ . '/../includes/og_meta.php';
             <input type="hidden" name="ajax" value="1">
             <input type="file" id="fileInputMain" name="images[]" multiple accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.jfif,.avif,.svg,.bmp,.ico" hidden>
             <div class="dz-browse-row">
-              <button type="button" class="btn btn-primary" data-browse-btn onclick="event.preventDefault(); document.getElementById('fileInputMain').click();" style="width:auto;padding:12px 26px;">
+              <button type="button" class="btn btn-primary" data-browse-btn onclick="event.preventDefault(); document.getElementById('fileInputMain').click();" style="width:auto;padding:12px 24px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span>Browse Files</span>
+              </button>
+              <button type="button" class="btn-behance-featured" onclick="openBehanceImportModal()" style="padding:11px 22px;font-size:14px;">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M22 7h-7v-2h7v2zm1.726 10c-.442 1.297-2.029 3-5.101 3-4.356 0-5.746-3.081-5.746-5.918 0-3.327 1.884-6.082 5.753-6.082 4.093 0 5.282 3.013 4.966 6.136h-7.669c.074 1.705.952 2.824 2.83 2.824 1.488 0 2.228-.696 2.617-1.488l2.35.528zm-4.992-4.832c-.067-1.121-.692-2.128-2.316-2.128-1.503 0-2.296 1.007-2.42 2.128h4.736zm-11.734-7.168h4.59c1.944 0 3.41.486 3.41 2.378 0 1.258-.707 1.954-1.636 2.254 1.343.434 2.052 1.439 2.052 2.766 0 2.146-1.748 2.602-3.824 2.602h-4.592v-10zm2.748 3.972h1.611c.783 0 1.505-.125 1.505-1.07 0-.82-.577-.962-1.396-.962h-1.72v2.032zm0 4.068h1.838c.969 0 1.758-.154 1.758-1.229 0-.962-.738-1.122-1.654-1.122h-1.942v2.351z"/></svg>
+                <span>Import from Behance</span>
+                <span class="behance-sparkle-pill">AI</span>
               </button>
               <span class="dz-or">or drag &amp; drop anywhere here</span>
             </div>
@@ -367,6 +478,11 @@ include __DIR__ . '/../includes/og_meta.php';
                   <span class="mini-dropzone-text">or drop here</span>
                 </div>
               </form>
+              <button type="button" class="btn-behance-featured" onclick="openBehanceImportModal()" style="padding:6px 14px;font-size:12.5px;">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M22 7h-7v-2h7v2zm1.726 10c-.442 1.297-2.029 3-5.101 3-4.356 0-5.746-3.081-5.746-5.918 0-3.327 1.884-6.082 5.753-6.082 4.093 0 5.282 3.013 4.966 6.136h-7.669c.074 1.705.952 2.824 2.83 2.824 1.488 0 2.228-.696 2.617-1.488l2.35.528zm-4.992-4.832c-.067-1.121-.692-2.128-2.316-2.128-1.503 0-2.296 1.007-2.42 2.128h4.736zm-11.734-7.168h4.59c1.944 0 3.41.486 3.41 2.378 0 1.258-.707 1.954-1.636 2.254 1.343.434 2.052 1.439 2.052 2.766 0 2.146-1.748 2.602-3.824 2.602h-4.592v-10zm2.748 3.972h1.611c.783 0 1.505-.125 1.505-1.07 0-.82-.577-.962-1.396-.962h-1.72v2.032zm0 4.068h1.838c.969 0 1.758-.154 1.758-1.229 0-.962-.738-1.122-1.654-1.122h-1.942v2.351z"/></svg>
+                <span>Import from Behance</span>
+                <span class="behance-sparkle-pill">AI</span>
+              </button>
             <?php else: ?>
               <a href="upgrade" class="btn btn-primary btn-sm" style="width:auto;text-decoration:none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
@@ -775,5 +891,6 @@ if (!empty($canExportPdf) && !empty($allImages)) {
 ?>
 <?php include __DIR__ . '/../includes/image_lightbox.php'; ?>
 <?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>
+<?php include __DIR__ . '/../includes/behance_import_modal.php'; ?>
 </body>
 </html>

@@ -14,6 +14,7 @@ $adminName = $_SESSION['admin_name'] ?? 'Super Admin';
     <span class="badge-studio" style="background:var(--grad-primary);color:#fff;">ADMIN</span>
   </div>
   <div class="mobile-actions">
+    <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
     <button type="button" class="mobile-icon-btn" id="mobileMenuBtn" aria-label="Toggle menu" onclick="document.body.classList.toggle('mobile-menu-open');">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
     </button>
@@ -93,6 +94,12 @@ $adminName = $_SESSION['admin_name'] ?? 'Super Admin';
         <span style="font-size:11.5px;font-weight:600;color:var(--text-main);letter-spacing:0.02em;">SYSTEM ONLINE</span>
       </div>
       <div style="font-size:11px;color:var(--text-muted);">Root access privileges active.</div>
+    </div>
+
+    <!-- Appearance Theme Switcher Row -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 2px;margin-bottom:12px;">
+      <span style="font-size:12px;font-weight:600;color:var(--text-muted);">Appearance</span>
+      <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
     </div>
 
     <!-- Admin Profile Strip -->

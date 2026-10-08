@@ -44,14 +44,32 @@ include __DIR__ . '/../includes/og_meta.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<?php include __DIR__ . '/../includes/theme_head.php'; ?>
 <script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
+<!-- Top Floating Theme Switcher -->
+<div class="auth-top-bar">
+  <a href="../" class="auth-top-brand" title="SaaqiFolio Home">
+    <div class="brand-mark-sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+    </div>
+    <span>SaaqiFolio</span>
+  </a>
+  <div class="auth-top-actions">
+    <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
+  </div>
+</div>
+
 <div class="auth-wrap">
   <div class="auth-visual">
     <div class="mark-row">
-      <div class="brand-mark"></div>
+      <div class="brand-mark-glow">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </div>
+      </div>
       <div class="brand-name">SaaqiFolio</div>
     </div>
     <div class="auth-headline">Build your creative <em>portfolio</em> in minutes</div>

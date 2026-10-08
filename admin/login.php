@@ -51,12 +51,25 @@ include __DIR__ . '/../includes/og_meta.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<?php include __DIR__ . '/../includes/theme_head.php'; ?>
 <script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
+<div class="auth-top-bar">
+  <div class="auth-top-actions">
+    <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
+  </div>
+</div>
 <div class="auth-form-side" style="min-height:100vh;">
   <div class="auth-card">
-    <div class="mark-row" style="display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:20px;"><div class="brand-mark"></div><div class="brand-name">SaaqiFolio <span style="color:var(--text-muted);font-weight:400;font-size:14px;">Admin</span></div></div>
+    <div class="mark-row" style="display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:20px;">
+      <div class="brand-mark-glow">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </div>
+      </div>
+      <div class="brand-name">SaaqiFolio <span style="color:var(--text-muted);font-weight:400;font-size:14px;">Admin</span></div>
+    </div>
 
     <?php if ($error): ?><div class="auth-error"><?php echo e($error); ?></div><?php endif; ?>
 

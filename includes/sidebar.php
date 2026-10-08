@@ -20,6 +20,7 @@ $pdfPct = min(100, round(($pdfUsed / $freePdfLimit) * 100));
     <span class="badge-studio">STUDIO</span>
   </div>
   <div class="mobile-actions">
+    <?php include __DIR__ . '/theme_switcher.php'; ?>
     <a href="../p/<?php echo urlencode($user['public_slug'] ?? ''); ?>" target="_blank" class="mobile-icon-btn" title="View Public Page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
     </a>
@@ -179,6 +180,12 @@ $pdfPct = min(100, round(($pdfUsed / $freePdfLimit) * 100));
         </a>
       </div>
     <?php endif; ?>
+
+    <!-- Appearance Theme Switcher Row -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 2px;">
+      <span style="font-size:12px;font-weight:600;color:var(--text-muted);">Appearance</span>
+      <?php include __DIR__ . '/theme_switcher.php'; ?>
+    </div>
 
     <!-- User Profile Strip -->
     <div class="side-user-card">

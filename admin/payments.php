@@ -35,6 +35,7 @@ include __DIR__ . '/../includes/og_meta.php';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+<?php include __DIR__ . '/../includes/theme_head.php'; ?>
 <script src="../assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ui.js'); ?>"></script>
 </head>
 <body>
@@ -44,8 +45,15 @@ include __DIR__ . '/../includes/og_meta.php';
 
   <div class="admin-main">
     <div class="page-head">
-      <div class="page-title">Payments</div>
-      <div class="page-desc">Every JazzCash / Easypaisa transaction attempt across all users.</div>
+      <div class="page-head-row">
+        <div>
+          <div class="page-title">Payments</div>
+          <div class="page-desc">Every JazzCash / Easypaisa transaction attempt across all users.</div>
+        </div>
+        <div>
+          <?php include __DIR__ . '/../includes/theme_switcher.php'; ?>
+        </div>
+      </div>
     </div>
 
     <div class="admin-stats-grid">

@@ -69,7 +69,8 @@ $assetBase = get_site_root_url();
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo $assetBase; ?>/assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/assets/css/style.css'); ?>">
-<script src="<?php echo $assetBase; ?>/assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/assets/js/ui.js'); ?>" defer></script>
+<?php include __DIR__ . '/includes/theme_head.php'; ?>
+<script src="<?php echo $assetBase; ?>/assets/js/ui.js?v=<?php echo filemtime(__DIR__ . '/assets/js/ui.js'); ?>"></script>
 </head>
 <body>
 
@@ -87,7 +88,8 @@ $assetBase = get_site_root_url();
           <span class="brand-name">SaaqiFolio</span>
         </div>
       </div>
-      <div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <?php include __DIR__ . '/includes/theme_switcher.php'; ?>
         <a href="<?php echo $assetBase; ?>/auth/signup" class="btn btn-primary" style="width:auto;padding:8px 18px;font-size:13px;text-decoration:none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           <span>Get Started</span>
@@ -128,6 +130,7 @@ $assetBase = get_site_root_url();
         </div>
       </div>
       <div class="public-topbar-actions">
+        <?php include __DIR__ . '/includes/theme_switcher.php'; ?>
         <?php if (!empty($allImages)): ?>
           <button type="button" class="btn-pdf" onclick="openPdfExportModal()" title="Export Portfolio as PDF">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
@@ -183,8 +186,11 @@ $assetBase = get_site_root_url();
         <?php elseif ($bannerImages): ?>
           <div class="banner-collage">
             <?php foreach ($bannerImages as $img): ?>
-              <?php $thumb = get_portfolio_thumbnail_url($img['filename'], $assetBase); ?>
-              <img src="<?php echo e($thumb); ?>" loading="lazy" decoding="async" alt="Showcase artwork">
+              <?php 
+                $thumb = get_portfolio_thumbnail_url($img['filename'], $assetBase); 
+                $bImgSrc = $thumb ?: ($assetBase . '/assets/uploads/portfolio/' . e($img['filename']));
+              ?>
+              <img src="<?php echo e($bImgSrc); ?>" loading="lazy" decoding="async" width="280" height="250" alt="Showcase artwork">
             <?php endforeach; ?>
           </div>
           <div class="banner-overlay"></div>
@@ -198,7 +204,7 @@ $assetBase = get_site_root_url();
         <div class="avatar-wrap">
           <div class="profile-avatar-lg" <?php echo $user['avatar'] ? 'style="background:none;"' : ''; ?>>
             <?php if ($user['avatar']): ?>
-              <img src="<?php echo $assetBase; ?>/assets/uploads/avatars/<?php echo e($user['avatar']); ?>" class="avatar-img">
+              <img src="<?php echo $assetBase; ?>/assets/uploads/avatars/<?php echo e($user['avatar']); ?>" class="avatar-img" decoding="async" width="108" height="108" alt="<?php echo e($user['name']); ?>">
             <?php else: ?>
               <span class="avatar-initials"><?php echo e(initials($user['name'])); ?></span>
             <?php endif; ?>
@@ -316,7 +322,7 @@ $assetBase = get_site_root_url();
       <!-- Portfolio -->
       <div class="about-block" style="background:transparent;border:none;backdrop-filter:none;padding:0;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-          <h4 style="margin:0;font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text);text-transform:none;letter-spacing:normal;">Portfolio</h4>
+          <h4 style="margin:0;font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--text-main);text-transform:none;letter-spacing:normal;">Portfolio</h4>
           <?php if (!empty($allImages)): ?>
             <button type="button" class="btn-pdf" onclick="openPdfExportModal()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
@@ -344,7 +350,7 @@ $assetBase = get_site_root_url();
                       $thumb = get_portfolio_thumbnail_url($img['filename'], $assetBase);
                       $full  = $assetBase . '/assets/uploads/portfolio/' . e($img['filename']);
                     ?>
-                    <img src="<?php echo e($thumb); ?>" data-full-src="<?php echo e($full); ?>" class="thumb" loading="lazy" decoding="async" width="300" height="300" alt="Portfolio asset">
+                    <img src="<?php echo e($thumb ?: $full); ?>" data-full-src="<?php echo e($full); ?>" class="thumb" loading="lazy" decoding="async" width="300" height="300" alt="Portfolio asset">
                   </div>
                 </div>
               <?php endforeach; ?>

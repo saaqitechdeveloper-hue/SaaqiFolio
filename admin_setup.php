@@ -49,7 +49,14 @@ include __DIR__ . '/includes/og_meta.php';
 <body>
 <div class="auth-form-side" style="min-height:100vh;">
   <div class="auth-card">
-    <div class="mark-row" style="display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:14px;"><div class="brand-mark"></div><div class="brand-name">SaaqiFolio</div></div>
+    <div class="mark-row" style="display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:14px;">
+      <div class="brand-mark-glow">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </div>
+      </div>
+      <div class="brand-name">SaaqiFolio</div>
+    </div>
     <h1 style="text-align:center;font-size:18px;">Admin Panel Setup</h1>
 
     <?php if ($existingCount > 0): ?>

@@ -515,3 +515,67 @@ function confirmAction(message, onConfirm, options = {}) {
   overlay.querySelector('#confirmOk').addEventListener('click', () => { overlay.remove(); onConfirm(); });
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
+
+/* ──────────────────────────────────────────────
+   THEME SWITCHER ENGINE (LIGHT / DARK)
+────────────────────────────────────────────── */
+window.getCurrentTheme = function() {
+  return document.documentElement.getAttribute('data-theme') || 
+         localStorage.getItem('folivo_theme') || 
+         'dark';
+};
+
+window.setTheme = function(theme, animate = true) {
+  const root = document.documentElement;
+  const normalizedTheme = theme === 'light' ? 'light' : 'dark';
+
+  const applyThemeUpdate = () => {
+    root.setAttribute('data-theme', normalizedTheme);
+    try {
+      localStorage.setItem('folivo_theme', normalizedTheme);
+    } catch (err) {}
+
+    // Synchronize all theme toggle buttons on the page
+    document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
+      btn.setAttribute('data-current-theme', normalizedTheme);
+      btn.setAttribute('aria-checked', normalizedTheme === 'light' ? 'true' : 'false');
+      const label = btn.querySelector('.theme-toggle-label');
+      if (label) {
+        label.textContent = normalizedTheme === 'light' ? 'Light' : 'Dark';
+      }
+      btn.setAttribute('title', normalizedTheme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
+    });
+  };
+
+  // If View Transitions API is supported, use zero-reflow GPU blending
+  if (animate && document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.startViewTransition(() => {
+      applyThemeUpdate();
+    });
+  } else {
+    if (animate) {
+      root.classList.add('theme-transitioning');
+    }
+    applyThemeUpdate();
+    if (animate) {
+      setTimeout(() => {
+        root.classList.remove('theme-transitioning');
+      }, 220);
+    }
+  }
+};
+
+window.toggleTheme = function() {
+  const current = window.getCurrentTheme();
+  const next = current === 'light' ? 'dark' : 'light';
+  window.setTheme(next, true);
+};
+
+// Auto-sync theme buttons on initial load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    window.setTheme(window.getCurrentTheme(), false);
+  });
+} else {
+  window.setTheme(window.getCurrentTheme(), false);
+}
