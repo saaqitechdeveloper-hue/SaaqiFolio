@@ -34,7 +34,7 @@ define('FREE_IMAGE_LIMIT', 20);
 define('FREE_PDF_LIMIT', 3);
 
 // Pro plan price shown on the upgrade page and sent to the gateways.
-define('PRO_PRICE', 999.00); // PKR
+define('PRO_PRICE', 499.00); // PKR
 
 // ============================================
 // AI Image Categorization Backend (FastAPI service)

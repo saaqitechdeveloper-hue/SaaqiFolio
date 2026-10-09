@@ -170,7 +170,7 @@ include __DIR__ . '/../includes/og_meta.php';
             <div class="tier-price-row">
               <span class="price-currency">Rs.</span>
               <span class="price-val"><?php echo number_format(PRO_PRICE, 0); ?></span>
-              <span class="price-period">/ month</span>
+              <span class="price-period">/ lifetime</span>
             </div>
 
             <ul class="tier-perks">

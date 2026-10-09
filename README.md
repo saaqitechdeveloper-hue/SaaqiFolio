@@ -50,13 +50,13 @@ MySQL database instead of browser-only state.
 |---|---|---|
 | Portfolio images | 20 | Unlimited |
 | PDF downloads | 3 | Unlimited |
-| Price | Free | Rs. <configurable> / month |
+| Price | Free | Rs. <configurable> / lifetime |
 
 Both limits live in `config/db.php`:
 ```php
 define('FREE_IMAGE_LIMIT', 20);
 define('FREE_PDF_LIMIT', 3);
-define('PRO_PRICE', 999.00);
+define('PRO_PRICE', 499.00);
 ```
 
 ## Admin Panel
