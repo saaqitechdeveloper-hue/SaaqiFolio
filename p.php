@@ -133,7 +133,7 @@ $assetBase = get_site_root_url();
       <div class="public-topbar-actions">
         <?php include __DIR__ . '/includes/theme_switcher.php'; ?>
         <?php if (!empty($allImages)): ?>
-          <button type="button" class="btn-pdf" onclick="openPdfExportModal()" title="Export Portfolio as PDF">
+          <button type="button" class="btn-pdf" id="exportBtn" onclick="openPdfExportModal()" title="Export Portfolio as PDF">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
             <span class="btn-text-full">Export Your Portfolio</span>
             <span class="btn-text-short">Export PDF</span>
@@ -397,5 +397,17 @@ if ($user && !empty($allImages)) {
 }
 ?>
 <?php include __DIR__ . '/includes/image_lightbox.php'; ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const exportBtn = document.getElementById('exportBtn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', function () {
+      if (typeof gtag === 'function') {
+        gtag('event', 'export_portfolio');
+      }
+    });
+  }
+});
+</script>
 </body>
 </html>

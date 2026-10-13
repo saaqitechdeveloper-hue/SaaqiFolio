@@ -269,6 +269,9 @@ async function ajaxUploadFiles(form, fileInput, files, loaderEls) {
   if (overlay) overlay.hidden = true;
 
   if (successCount > 0) {
+    if (typeof gtag === 'function') {
+      gtag('event', 'upload_images', { count: successCount });
+    }
     if (typeof showToast === 'function') {
       showToast(`${successCount} artwork piece(s) uploaded and converted to AVIF!`, 'success');
     }
@@ -917,3 +920,43 @@ setInterval(function() {
 window.addEventListener('saaqi:sync', function() {
   if (window.SaaqiSync) window.SaaqiSync.check();
 });
+
+// ============================================
+// Google Analytics (GA4) Global Event Handlers
+// (sign_up, upload_images, export_portfolio)
+// ============================================
+function trackGaEvent(eventName, params = {}) {
+  try {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', eventName, params);
+      console.log('[GA4 Event Triggered]:', eventName, params);
+    } else if (window.dataLayer && Array.isArray(window.dataLayer)) {
+      window.dataLayer.push({ event: eventName, ...params });
+      console.log('[GA4 DataLayer Pushed]:', eventName, params);
+    }
+  } catch (err) {
+    console.warn('[GA4 Error]:', err);
+  }
+}
+window.trackGaEvent = trackGaEvent;
+
+document.addEventListener('click', function(e) {
+  // 1. Export Portfolio Click
+  const exportTarget = e.target.closest('#exportBtn, .btn-pdf, [onclick*="openPdfExportModal"], [onclick*="handleProfileExportPdf"], [data-ga-event="export_portfolio"]');
+  if (exportTarget) {
+    trackGaEvent('export_portfolio');
+  }
+
+  // 2. Upload Images Click
+  const uploadTarget = e.target.closest('#uploadImagesBtn, #uploadImagesBtnMain, [data-browse-btn], [data-ga-event="upload_images"]');
+  if (uploadTarget) {
+    trackGaEvent('upload_images');
+  }
+
+  // 3. Sign Up Button Click
+  const signUpTarget = e.target.closest('#signUpBtn, [data-ga-event="sign_up"]');
+  if (signUpTarget) {
+    trackGaEvent('sign_up');
+  }
+});
+

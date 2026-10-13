@@ -540,6 +540,9 @@ foreach (array_slice($candidateImages, 0, 16) as $img) {
 
   // Open & Close Handlers
   window.openPdfExportModal = function() {
+    if (typeof gtag === 'function') {
+      gtag('event', 'export_portfolio');
+    }
     // 1. Quota check
     if (window.SaaqiState && !window.SaaqiState.is_subscribed && window.SaaqiState.remaining_pdf !== 'unlimited' && window.SaaqiState.remaining_pdf <= 0) {
       if (typeof showToast === 'function') {
@@ -1013,6 +1016,9 @@ foreach (array_slice($candidateImages, 0, 16) as $img) {
   let progressInterval = null;
 
   window.startPdfGenerationDownload = function() {
+    if (typeof gtag === 'function') {
+      gtag('event', 'export_portfolio', { template: currentTemplate || 'obsidian' });
+    }
     const step1 = document.getElementById('pdfScopeModal');
     const step2 = document.getElementById('pdfTemplateModal');
     const step3 = document.getElementById('pdfPreviewModal');

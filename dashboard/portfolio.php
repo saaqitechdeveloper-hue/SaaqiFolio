@@ -437,7 +437,7 @@ include __DIR__ . '/../includes/og_meta.php';
             <input type="hidden" name="ajax" value="1">
             <input type="file" id="fileInputMain" name="images[]" multiple accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.jfif,.avif,.svg,.bmp,.ico" hidden>
             <div class="dz-browse-row">
-              <button type="button" class="btn btn-primary" data-browse-btn onclick="event.preventDefault(); document.getElementById('fileInputMain').click();" style="width:auto;padding:12px 24px;">
+              <button type="button" class="btn btn-primary" id="uploadImagesBtnMain" data-browse-btn onclick="event.preventDefault(); document.getElementById('fileInputMain').click();" style="width:auto;padding:12px 24px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span>Browse Files</span>
               </button>
@@ -471,7 +471,7 @@ include __DIR__ . '/../includes/og_meta.php';
                 <input type="hidden" name="ajax" value="1">
                 <input type="file" id="fileInputAdd" name="images[]" multiple accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.jfif,.avif,.svg,.bmp,.ico" hidden>
                 <div class="mini-dropzone" id="dropzoneAdd">
-                  <button type="button" data-browse-btn onclick="event.preventDefault(); document.getElementById('fileInputAdd').click();" class="btn btn-primary btn-sm">
+                  <button type="button" id="uploadImagesBtn" data-browse-btn onclick="event.preventDefault(); document.getElementById('fileInputAdd').click();" class="btn btn-primary btn-sm">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     <span>Add Images</span>
                   </button>
@@ -490,7 +490,7 @@ include __DIR__ . '/../includes/og_meta.php';
               </a>
             <?php endif; ?>
             <?php if ($canExportPdf): ?>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="openPdfExportModal()" style="width:auto;">
+              <button type="button" class="btn btn-ghost btn-sm" id="exportBtn" onclick="openPdfExportModal()" style="width:auto;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                 <span>Export Your Portfolio<?php echo $remPdf; ?></span>
               </button>
@@ -876,6 +876,36 @@ function saveCategoryOrder(grid) {
 
 document.addEventListener('DOMContentLoaded', initSortableGrids);
 initSortableGrids();
+
+// Google Analytics Event Listeners
+document.addEventListener('DOMContentLoaded', function () {
+  const exportBtn = document.getElementById('exportBtn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', function () {
+      if (typeof gtag === 'function') {
+        gtag('event', 'export_portfolio');
+      }
+    });
+  }
+
+  const uploadBtn = document.getElementById('uploadImagesBtn');
+  if (uploadBtn) {
+    uploadBtn.addEventListener('click', function () {
+      if (typeof gtag === 'function') {
+        gtag('event', 'upload_images');
+      }
+    });
+  }
+
+  const uploadBtnMain = document.getElementById('uploadImagesBtnMain');
+  if (uploadBtnMain) {
+    uploadBtnMain.addEventListener('click', function () {
+      if (typeof gtag === 'function') {
+        gtag('event', 'upload_images');
+      }
+    });
+  }
+});
 </script>
 <?php
 $pdfModalBaseUrl = 'download_pdf';

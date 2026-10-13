@@ -132,12 +132,25 @@ include __DIR__ . '/../includes/og_meta.php';
             </ul>
           </div>
         </div>
-        <button class="btn btn-primary" type="submit">Create account</button>
+        <button class="btn btn-primary" type="submit" id="signUpBtn">Create account</button>
       </form>
       <div class="auth-hint">Join thousands of creative professionals showcasing their work with SaaqiFolio.</div>
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const signUpBtn = document.getElementById('signUpBtn');
+  if (signUpBtn) {
+    signUpBtn.addEventListener('click', function () {
+      if (typeof gtag === 'function') {
+        gtag('event', 'sign_up');
+      }
+    });
+  }
+});
+</script>
 
 <?php include __DIR__ . '/../includes/whatsapp_btn.php'; ?>
 <?php include __DIR__ . '/../includes/tutorial_video_modal.php'; ?>

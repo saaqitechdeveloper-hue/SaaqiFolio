@@ -503,7 +503,7 @@ include __DIR__ . '/../includes/og_meta.php';
               $canDownloadPdf = $user['is_subscribed'] || ($user['pdf_downloads_count'] ?? 0) < FREE_PDF_LIMIT;
               ?>
               <?php if ($canDownloadPdf): ?>
-                <button type="button" class="btn btn-ghost btn-sm" onclick="handleProfileExportPdf(<?php echo (int)($imageCount ?? 0); ?>)">
+                <button type="button" class="btn btn-ghost btn-sm" id="exportBtn" onclick="handleProfileExportPdf(<?php echo (int)($imageCount ?? 0); ?>)">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   <span>Export Your Portfolio<?php echo $user['is_subscribed'] ? '' : ' (' . $remainingPdf . ' left)'; ?></span>
                 </button>
@@ -853,8 +853,22 @@ function handleProfileExportPdf(count) {
     alert('Please upload images to your portfolio first before exporting.');
     return false;
   }
+  if (typeof gtag === 'function') {
+    gtag('event', 'export_portfolio');
+  }
   openPdfExportModal();
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+  const exportBtn = document.getElementById('exportBtn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', function () {
+      if (typeof gtag === 'function') {
+        gtag('event', 'export_portfolio');
+      }
+    });
+  }
+});
 </script>
 <?php
 $pdfModalBaseUrl = 'download_pdf';

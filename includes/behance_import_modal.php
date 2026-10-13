@@ -1033,6 +1033,10 @@ html[data-theme="light"] .behance-complete-desc {
       showToast(`${importedSuccess} artwork(s) imported from Behance!`, 'success', 3500);
     }
 
+    if (importedSuccess > 0 && typeof gtag === 'function') {
+      gtag('event', 'upload_images', { source: 'behance', count: importedSuccess });
+    }
+
     // Refresh entire portfolio gallery, categories, and PDF modal dynamically
     if (typeof window.refreshPortfolioGallery === 'function') {
       window.refreshPortfolioGallery();
