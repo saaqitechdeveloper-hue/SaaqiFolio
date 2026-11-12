@@ -39,7 +39,7 @@ define('PRO_PRICE', 499.00); // PKR
 // ============================================
 // AI Image Categorization Backend (FastAPI service)
 // ============================================
-define('AI_BACKEND_URL', 'https://saaqitech.pythonanywhere.com');
+define('AI_BACKEND_URL', 'https://raza.pythonanywhere.com');
 define('AI_BACKEND_API_KEY', 'ac1ea6fde51f9d94f544930585dc5c4e0457196728cc01db0a00f8d965bc764f');
 define('AI_BACKEND_TIMEOUT', 7); // seconds, per single image (prevents hanging)
 define('AI_BACKEND_BATCH_TIMEOUT', 45); // seconds, for the whole batch call
